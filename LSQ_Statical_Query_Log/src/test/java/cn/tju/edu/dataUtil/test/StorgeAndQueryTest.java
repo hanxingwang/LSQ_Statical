@@ -33,9 +33,9 @@ public class StorgeAndQueryTest {
 	
 	@Test
 	public void c_testQueryFeatures() {
-		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> PREFIX sp:<http://spinrdf.org/sp#> SELECT ?text WHERE {  ?id lsqv:usesFeature lsqv:SubQuery. ?id lsqv:usesFeature lsqv:Optional . ?id lsqv:usesFeature lsqv:Union . ?id sp:text ?text  }";
+		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> PREFIX sp:<http://spinrdf.org/sp#> SELECT ?text WHERE {  ?id lsqv:usesFeature lsqv:SubQuery. ?id sp:text ?text  }";
 		
-		query.QueryToFile(queryString, "/home/hanxingwang/Data/SearchResult/UnionAndSubQuery");
+		query.QueryToFile(queryString, "/home/hanxingwang/Data/SearchResult/SubQuery");
 	}
 
 }

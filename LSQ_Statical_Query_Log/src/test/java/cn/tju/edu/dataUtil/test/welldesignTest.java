@@ -15,7 +15,7 @@ public class welldesignTest {
 	private static Storge storge = new Storge("/home/hanxingwang/Data/SesameStorage");
 	private static QueryStorge query = new QueryStorge(storge.getConnection());
 	
-	@Test
+//	@Test
 	public void a_testGetSource() {
 		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> PREFIX sp:<http://spinrdf.org/sp#> SELECT ?text WHERE {  ?id lsqv:triplePatterns ?triples. ?id sp:text ?text }";
 		
@@ -26,6 +26,7 @@ public class welldesignTest {
 	public void b_testWellDesign() {
 		String sparqlString = null;
 		String filePath = "/home/hanxingwang/Data/SearchResult/QueryText";
+//		String filePath = "/home/hanxingwang/Data/subQuery";
 		FileReader fileReader = null;
 		BufferedReader bufferedReader = null;
 		
@@ -36,9 +37,11 @@ public class welldesignTest {
 			
 			while ((sparqlString = bufferedReader.readLine()) != null) {
 				begin = sparqlString.indexOf('\"');
+//				begin = -1;
 				end = sparqlString.lastIndexOf('\"');
+//				end = sparqlString.length();
 				if(begin < end)
-					WelldesignUtil.isWelldesign(sparqlString.substring(begin+1, end));
+					WelldesignUtil.isWelldesign(sparqlString.substring(begin+1, end), false);
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block

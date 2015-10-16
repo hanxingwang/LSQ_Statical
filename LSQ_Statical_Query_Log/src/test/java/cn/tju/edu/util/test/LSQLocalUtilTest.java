@@ -4,11 +4,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import cn.tju.edu.util.LSQLocalUtil;
 import cn.tju.edu.util.StringUtil;
 
 public class LSQLocalUtilTest {
-	private LSQLocalUtil lsq = new LSQLocalUtil();
+//	private LSQLocalUtil lsq = new LSQLocalUtil();
 
 	@Before
 	public void setUp() throws Exception {

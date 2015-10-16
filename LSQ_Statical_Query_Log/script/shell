@@ -3,3 +3,6 @@ sed 's/lsqr:-anon/lsqr:_anon/g' sourceFile destFile
 
 // extracted the number from result
 sed -n 's/^[^\"]*\"//; s/\".*$//p' TriplePatternsStatistical-BM >> TriplePatternsStatistical-BM-num
+
+
+replace \t(Tab) to space
