@@ -25,8 +25,8 @@ public class welldesignTest {
 	@Test
 	public void b_testWellDesign() {
 		String sparqlString = null;
-		String filePath = "/home/hanxingwang/Data/SearchResult/QueryText";
-//		String filePath = "/home/hanxingwang/Data/subQuery";
+//		String filePath = "/home/hanxingwang/Data/SearchResult/QueryText";
+		String filePath = "/home/hanxingwang/Data/SearchResult/unUnionNormalForm";
 		FileReader fileReader = null;
 		BufferedReader bufferedReader = null;
 		
@@ -36,10 +36,10 @@ public class welldesignTest {
 			bufferedReader = new BufferedReader(fileReader);
 			
 			while ((sparqlString = bufferedReader.readLine()) != null) {
-				begin = sparqlString.indexOf('\"');
-//				begin = -1;
-				end = sparqlString.lastIndexOf('\"');
-//				end = sparqlString.length();
+//				begin = sparqlString.indexOf('\"');
+				begin = -1;
+//				end = sparqlString.lastIndexOf('\"');
+				end = sparqlString.length();
 				if(begin < end)
 					WelldesignUtil.isWelldesign(sparqlString.substring(begin+1, end), false);
 			}
