@@ -26,7 +26,7 @@ public class welldesignTest {
 	public void b_testWellDesign() {
 		String sparqlString = null;
 //		String filePath = "/home/hanxingwang/Data/SearchResult/QueryText";
-		String filePath = "/home/hanxingwang/Data/SearchResult/unUnionNormalForm";
+		String filePath = "/home/hanxingwang/Data/SearchResult/NotUnionFree";
 		FileReader fileReader = null;
 		BufferedReader bufferedReader = null;
 		
