@@ -996,7 +996,7 @@ public class WelldesignUtil {
 			end = findTheBraceEnd(whereClause, start);
 			
 			bagPattern = whereClause.substring(start, end);
-			if(!travelBGP(bagPattern, whereClause))
+			if(!travelBGP(bagPattern, bagPattern))
 				return false;
 			while (unionMatcher.find(end-1)) {
 				start = unionMatcher.end() - 1;
@@ -1004,7 +1004,7 @@ public class WelldesignUtil {
 				
 				bagPattern = whereClause.substring(start, end);
 				
-				if(!travelBGP(bagPattern, whereClause))
+				if(!travelBGP(bagPattern, bagPattern))
 					return false;
 			}
 		} else {
@@ -1732,38 +1732,6 @@ public class WelldesignUtil {
 		
 
 		return true;
-	}
-	
-	private static String deleteFilter(String sourceString) {
-		StringBuffer destinationString = new StringBuffer("");
-		
-		Pattern filterPattern = Pattern.compile("FILTER[ a-zA-Z]*[\\(\\{]");
-		Matcher filterMatcher = filterPattern.matcher(sourceString);
-		
-		int index = 0, start, end;
-		while(filterMatcher.find(index)) {
-			start = filterMatcher.start();
-			end = filterMatcher.end() - 1;
-			
-			if(sourceString.charAt(end) == '(')
-				end = findTheLittleBraceEnd(sourceString, end);
-			else if(sourceString.charAt(end) == '{')
-				end = findTheBraceEnd(sourceString, end);
-			
-			while(sourceString.charAt(end) == ' ')
-				end ++;
-			
-			if(sourceString.charAt(end) == '.')
-				end ++;
-			
-			destinationString.append(sourceString.substring(index, start));
-			
-			index = end;
-		}
-		
-		destinationString.append(sourceString.substring(index, sourceString.length()));
-		
-		return destinationString.toString();
 	}
 
 	private static boolean travelBGP(String bagPatterns, String wholeWhereClause) {
