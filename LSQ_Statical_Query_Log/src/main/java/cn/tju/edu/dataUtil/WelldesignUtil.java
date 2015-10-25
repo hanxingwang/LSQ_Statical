@@ -18,8 +18,7 @@ public class WelldesignUtil {
 	private static int unionNormalFormCount = 0;
 	private static int unUnionNormalFormCount = 0;
 	private static int canNotChangeToUnionFreeCount = 0;
-//	private static int unionWithNotFirstBraceCount = 0;
-	private static int unionNormalFormWithFilterAndOptionalCount = 0;
+	private static int unionWithoutOptionalAndFilterClauseCount = 0;
 
 	public static boolean isWelldesign(String queryString, boolean isSubQuery) {
 		String whereClause = null;
@@ -90,12 +89,29 @@ public class WelldesignUtil {
 			
 			whereClause = upperString.substring(whereClauseBegin, whereClauseEnd + 1);
 			
+			if(!isSafe(whereClause)) {
+				if(!isSubQuery) {					
+					unWellDesignedBufferedWriter.write(queryString + "\n");
+					notWellCount++;
+					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
+						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
+				}
+				return false;
+			}
+			
 			upperString = whereClause.toUpperCase();
 
 			Pattern unionPattern = Pattern.compile("\\} *UNION *\\{");
 			Matcher unionMatcher = unionPattern.matcher(upperString);
 			
 			if (unionMatcher.find()) {
+				if(!isSubQuery) {
+					unionBufferedWriter.write(queryString + "\n");
+					unionCount ++;
+					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
+						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
+				}
+								
 				if (isUnionWellDesigned(upperString)) {
 					if(!isSubQuery) {
 						wellDesignedBufferedWriter.write(queryString + "\n");
@@ -114,16 +130,6 @@ public class WelldesignUtil {
 					return false;
 				}
 
-			}
-			
-			if(!isSafe(whereClause)) {
-				if(!isSubQuery) {		
-					unWellDesignedBufferedWriter.write(queryString + "\n");
-					notWellCount++;
-					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
-						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
-				}
-				return false;
 			}
 
 			if (travelBGP(upperString, upperString)) {
@@ -171,8 +177,8 @@ public class WelldesignUtil {
 		BufferedWriter unionNormalFormBufferedWriter = null;
 		BufferedWriter unUnionNormalFormBufferedWriter = null;
 		BufferedWriter canNotChangeToUnionFreeBufferedWriter = null;
-		// BufferedWriter unionWithNotFirstBraceBufferedWriter = null;
-		BufferedWriter unionNormalFormWithFilterAndOptionalBufferedWriter = null;
+		BufferedWriter unionWithoutOptionalAndFilterClauseBufferedWriter = null;
+//		BufferedWriter theRestBufferedWrite = null;
 
 		try {
 			FileWriter unionNormalFormWrite = new FileWriter("/home/hanxingwang/Data/SearchResult/unionNormalForm",
@@ -181,87 +187,132 @@ public class WelldesignUtil {
 					true);
 			FileWriter canNotChangeToUnionFreeWrite = new FileWriter(
 					"/home/hanxingwang/Data/SearchResult/canNotChangeToUnionNormalForm", true);
-			// FileWriter unionWithNotFirstBraceWrite = new FileWriter(
-			// "/home/hanxingwang/Data/SearchResult/unionWithNoFirstBrace",
-			// true);
-			FileWriter unionNormalFormWithFilterAndOptionalWrite = new FileWriter(
-					"/home/hanxingwang/Data/SearchResult/unionNormalFormWithFilterAndOptional", true);
+			FileWriter unionWithoutOptionalAndFilterClauseWrite = new FileWriter(
+			 "/home/hanxingwang/Data/SearchResult/unionWithoutOptionalAndFilterClause",
+			 true);
+//			FileWriter theRestWrite = new FileWriter("/home/hanxingwang/Data/SearchResult/TheRest", true);
+
 
 			unionNormalFormBufferedWriter = new BufferedWriter(unionNormalFormWrite);
 			unUnionNormalFormBufferedWriter = new BufferedWriter(unUnionNormalFormWrite);
 			canNotChangeToUnionFreeBufferedWriter = new BufferedWriter(canNotChangeToUnionFreeWrite);
-			// unionWithNotFirstBraceBufferedWriter = new
-			// BufferedWriter(unionWithNotFirstBraceWrite);
-			unionNormalFormWithFilterAndOptionalBufferedWriter = new BufferedWriter(
-					unionNormalFormWithFilterAndOptionalWrite);
+			unionWithoutOptionalAndFilterClauseBufferedWriter = new BufferedWriter(unionWithoutOptionalAndFilterClauseWrite);
+//			theRestBufferedWrite = new BufferedWriter(theRestWrite);
 
+			// do not have the optional and filter key world
+			if (isUnionWithoutOptional(whereClause)) {
+				unionWithoutOptionalAndFilterClauseBufferedWriter.write(whereClause + "\n");
+				unionWithoutOptionalAndFilterClauseCount++;
+				System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
+						+ " unUnionNormalForm:" + unUnionNormalFormCount + " canNotChangeToUnionNormalFree:"
+						+ canNotChangeToUnionFreeCount + " unionWithoutOptionalAndFilterClause:"
+						+ unionWithoutOptionalAndFilterClauseCount);
+
+				return true;
+			}
+			
 			if (isOptionalUnionFree(whereClause)) {
 				canNotChangeToUnionFreeBufferedWriter.write(whereClause + "\n");
 				canNotChangeToUnionFreeCount++;
 				System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
-						+ " unUnionNormalForm:" + unUnionNormalFormCount + " unionNormalFormWithFiterAndOptional:"
-						+ unionNormalFormWithFilterAndOptionalCount + " canNotChangeToUnionNormalFree:"
-						+ canNotChangeToUnionFreeCount);
+						+ " unUnionNormalForm:" + unUnionNormalFormCount + " canNotChangeToUnionNormalFree:"
+						+ canNotChangeToUnionFreeCount + " unionWithoutOptionalAndFilterClause:"
+						+ unionWithoutOptionalAndFilterClauseCount);
 
 				return false;
 			}
-
-			if (isUnionNormal(whereClause)) {
-				// P UNION Q UNION R
-				unionNormalFormBufferedWriter.write(whereClause + "\n");
-				unionNormalFormCount++;
-				System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
-						+ " unUnionNormalForm:" + unUnionNormalFormCount + " unionNormalFormWithFiterAndOptional:"
-						+ unionNormalFormWithFilterAndOptionalCount + " canNotChangeToUnionNormalFree:"
-						+ canNotChangeToUnionFreeCount);
-
-				if (!isSafe(whereClause))
-					return false;
-
-				if (unionNormalWellDesigned(whereClause))
-					return true;
-				else
-					return false;
-
-			} else {
-				if (isUnionWithOptionalOrFilter(whereClause)) {
-					unionNormalFormWithFilterAndOptionalBufferedWriter.write(whereClause + "\n");
-					unionNormalFormWithFilterAndOptionalCount++;
-					System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
-							+ " unUnionNormalForm:" + unUnionNormalFormCount + " unionNormalFormWithFiterAndOptional:"
-							+ unionNormalFormWithFilterAndOptionalCount + " canNotChangeToUnionNormalFree:"
-							+ canNotChangeToUnionFreeCount);
-
-					whereClause = rewriteUnionWithOptionalOrFilter(whereClause);
-					
-					if(isUnionNormal(whereClause)) {
-						if (!isSafe(whereClause))
-							return false;
-
-						if (unionNormalWellDesigned(whereClause))
-							return true;
-						else
-							return false;
-					} else 
-						try {
-							throw new Exception("Rewrite sparql query failure!");
-						} catch (Exception e) {
-							// TODO: handle exception
-							e.printStackTrace();
-						}
-					
-				} else {
-					unUnionNormalFormBufferedWriter.write(whereClause + "\n");
-					unUnionNormalFormCount++;
-					System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
-							+ " unUnionNormalForm:" + unUnionNormalFormCount + " unionNormalFormWithFiterAndOptional:"
-							+ unionNormalFormWithFilterAndOptionalCount + " canNotChangeToUnionNormalFree:"
-							+ canNotChangeToUnionFreeCount);
-
-					return false;
-				}
-
+			
+			while(!isUnionNormal(whereClause)) {
+				whereClause = rewriteToUnionNormalForm(whereClause);
 			}
+			
+			if(!isUnionNormal(whereClause))
+				try {
+					throw new Exception("rewrite error!");
+				} catch (Exception e) {
+						// TODO: handle exception
+				}		
+				
+			if (unionNormalWellDesigned(whereClause))
+				return true;
+			else
+				return false;
+
+//			if (isUnionNormal(whereClause)) {
+//				// P UNION Q UNION R
+//				unionNormalFormBufferedWriter.write(whereClause + "\n");
+//				unionNormalFormCount++;
+//				System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
+//						+ " unUnionNormalForm:" + unUnionNormalFormCount + " canNotChangeToUnionNormalFree:"
+//						+ canNotChangeToUnionFreeCount + " unionWithoutOptionalAndFilterClause:"
+//						+ unionWithoutOptionalAndFilterClauseCount);
+//			} else {
+//				unUnionNormalFormBufferedWriter.write(whereClause + "\n");
+//				unUnionNormalFormCount++;
+//				System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
+//						+ " unUnionNormalForm:" + unUnionNormalFormCount + " canNotChangeToUnionNormalFree:"
+//						+ canNotChangeToUnionFreeCount + " unionWithoutOptionalAndFilterClause:"
+//						+ unionWithoutOptionalAndFilterClauseCount);
+//				
+//				while(!isUnionNormal(whereClause)) {
+//					whereClause = rewriteToUnionNormalForm(whereClause);
+//				}
+//				
+//				unUnionNormalFormBufferedWriter.write(whereClause + "\n");
+//				
+//				if(!isUnionNormal(whereClause))
+//					try {
+//						throw new Exception("rewrite error!");
+//					} catch (Exception e) {
+//							// TODO: handle exception
+//					}		
+//					
+//				if (unionNormalWellDesigned(whereClause))
+//					return true;
+//				else
+//					return false;
+
+//				if (isUnionWithOptionalOrFilter(whereClause)) {
+//					unionNormalFormWithFilterAndOptionalBufferedWriter.write(whereClause + "\n");
+//					unionNormalFormWithFilterAndOptionalCount++;
+//					System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
+//							+ " unUnionNormalForm:" + unUnionNormalFormCount + " unionNormalFormWithFiterAndOptional:"
+//							+ unionNormalFormWithFilterAndOptionalCount + " canNotChangeToUnionNormalFree:"
+//							+ canNotChangeToUnionFreeCount + " unionWithoutOptionalAndFilterClause:"
+//							+ unionWithoutOptionalAndFilterClauseCount);
+//
+//					whereClause = rewriteUnionWithOptionalOrFilter(whereClause);
+//					
+//					if(isUnionNormal(whereClause)) {
+////						if (!isSafe(whereClause))
+////							return false;
+//
+//						if (unionNormalWellDesigned(whereClause))
+//							return true;
+//						else
+//							return false;
+//					} else 
+//						try {
+//							throw new Exception("Rewrite sparql query failure!");
+//						} catch (Exception e) {
+//							// TODO: handle exception
+//							e.printStackTrace();
+//						}
+//					
+//				} else {
+//					unUnionNormalFormBufferedWriter.write(whereClause + "\n");
+//					unUnionNormalFormCount++;
+//					System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
+//							+ " unUnionNormalForm:" + unUnionNormalFormCount + " unionNormalFormWithFiterAndOptional:"
+//							+ unionNormalFormWithFilterAndOptionalCount + " canNotChangeToUnionNormalFree:"
+//							+ canNotChangeToUnionFreeCount + " unionWithoutOptionalAndFilterClause:"
+//							+ unionWithoutOptionalAndFilterClauseCount);
+//
+//					return false;
+//				}
+
+//			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
@@ -269,14 +320,14 @@ public class WelldesignUtil {
 				unionNormalFormBufferedWriter.flush();
 				unUnionNormalFormBufferedWriter.flush();
 				canNotChangeToUnionFreeBufferedWriter.flush();
-				// unionWithNotFirstBraceBufferedWriter.flush();
-				unionNormalFormWithFilterAndOptionalBufferedWriter.flush();
+				unionWithoutOptionalAndFilterClauseBufferedWriter.flush();
+//				theRestBufferedWrite.flush();
 
 				unionNormalFormBufferedWriter.close();
 				unUnionNormalFormBufferedWriter.close();
 				canNotChangeToUnionFreeBufferedWriter.close();
-				// unionWithNotFirstBraceBufferedWriter.close();
-				unionNormalFormWithFilterAndOptionalBufferedWriter.close();
+				unionWithoutOptionalAndFilterClauseBufferedWriter.close();
+//				theRestBufferedWrite.close();
 
 			} catch (Exception e) {
 				// TODO: handle exception
@@ -287,7 +338,7 @@ public class WelldesignUtil {
 		return true;
 	}
 	
-	// OPT ( P UNION Q)
+	// OPT (P UNION Q)
 	private static boolean isOptionalUnionFree(String whereClause) {
 		Pattern optionalPattern = Pattern.compile("OPTIONAL *\\{");
 		Matcher optionalMatcher = optionalPattern.matcher(whereClause);
@@ -310,6 +361,18 @@ public class WelldesignUtil {
 		
 		return false;
 	}
+	
+	// do not have optional and filter key word
+	private static boolean isUnionWithoutOptional(String whereClause) {
+		Pattern optionalPattern = Pattern.compile("OPTIONAL *\\{");
+		Matcher optionalMatcher = optionalPattern.matcher(whereClause);
+		
+		if(optionalMatcher.find())
+			return false;
+		else
+			return true;
+	}
+	
 	
 	// P UNION Q UNION R
 	private static boolean isUnionNormal(String whereClause) {
@@ -369,353 +432,385 @@ public class WelldesignUtil {
 	}
 	
 	// P UNION Q OPTIONAL R FILTER T
-	private static boolean isUnionWithOptionalOrFilter(String whereClause) {
-		Pattern filterPattern = Pattern.compile(" *FILTER[ A-Za-z]*[\\(\\{]");
-		Matcher filterMatcher = filterPattern.matcher(whereClause);
-		Matcher beginFilterMatcher = null;
-		
-		int start = 0, end = 1;
-		beginFilterMatcher = filterPattern.matcher(whereClause.substring(end));
-		while(beginFilterMatcher.lookingAt()) {
-			if(!filterMatcher.find(end))
-				try {
-					throw new Exception("Filter error at the first stage of union");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			
-			start = filterMatcher.end() - 1;
-			if(whereClause.charAt(start) == '{')
-				end = findTheBraceEnd(whereClause, start);
-			else if (whereClause.charAt(start) == '(') 
-				end = findTheLittleBraceEnd(whereClause, start);
-			else {
-				try {
-					throw new Exception("It is not the correct brace.");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			
-			while(whereClause.charAt(end) == ' ')
-				end ++;
-			
-			if(whereClause.charAt(end) == '.')
-				end ++;
-			
-			beginFilterMatcher = filterPattern.matcher(whereClause.substring(end));
-		}
-		
-		Pattern firstBracePattern = Pattern.compile(" *\\{");
-		Matcher firstBraceMatcher = firstBracePattern.matcher(whereClause.substring(end));
-		
-		Pattern unionPattern = Pattern.compile("\\} *UNION *\\{");
-		Matcher unionMatcher = unionPattern.matcher(whereClause);
-		Matcher innerUnionMatcher = null;
-		Matcher beginUnionMatcher = null;
-		
-		String bagPattern = null;
-		if(firstBraceMatcher.lookingAt()) {
-			firstBraceMatcher = firstBracePattern.matcher(whereClause);
-			if(!firstBraceMatcher.find(end))
-				try {
-					throw new Exception("Filter error at the first stage of union");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			
-			start = firstBraceMatcher.end() - 1;
-			end = findTheBraceEnd(whereClause, start);
-			
-			bagPattern = whereClause.substring(start, end);
-			
-			innerUnionMatcher = unionPattern.matcher(bagPattern);
-			if(innerUnionMatcher.find())
-				return false;
-			
-			beginUnionMatcher = unionPattern.matcher(whereClause.substring(end - 1));
-			while (beginUnionMatcher.lookingAt()) {
-				if(!unionMatcher.find(end-1))
-					try {
-						throw new Exception("Filter error at the first stage of union");
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				
-				start = unionMatcher.end() - 1;
-				end = findTheBraceEnd(whereClause, start);
-				
-				bagPattern = whereClause.substring(start, end);
-				
-				innerUnionMatcher = unionPattern.matcher(bagPattern);
-				if(innerUnionMatcher.find())
-					return false;
-				
-				beginUnionMatcher = unionPattern.matcher(whereClause.substring(end - 1));
-			}
-		} else {
-			return false;
-		}
-		
-		while(whereClause.charAt(end) == ' ')
-			end ++;
-		
-		if(whereClause.charAt(end) == '.')
-			end ++;
-		
-		Pattern optionalAndFilterPattern = Pattern.compile("( *OPTIONAL *\\{)|( *[\\}]?FILTER[ a-zA-Z]*[\\(\\{])");
-		Matcher optionalAndFilterMatcher = optionalAndFilterPattern.matcher(whereClause);
-		Matcher beginOptionalAndFilterMatcher = null;
-		
-		beginOptionalAndFilterMatcher = optionalAndFilterPattern.matcher(whereClause.substring(end));
-		while (beginOptionalAndFilterMatcher.lookingAt()) {
-			if(!optionalAndFilterMatcher.find(end))
-				try {
-					throw new Exception("Filter error at the first stage of union");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}			
-			
-			start = optionalAndFilterMatcher.end()-1;
-			if(whereClause.charAt(start) == '{')
-				end = findTheBraceEnd(whereClause, start);
-			else if(whereClause.charAt(start) == '(')
-				end = findTheLittleBraceEnd(whereClause, start);
-			else {
-				try {
-					throw new Exception("It is not the correct brace.");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			
-			while(whereClause.charAt(end) == ' ')
-				end ++;
-			
-			if(whereClause.charAt(end) == '.')
-				end ++;
-			
-			beginOptionalAndFilterMatcher = optionalAndFilterPattern.matcher(whereClause.substring(end));
-		}		
-		
-		Pattern endPattern = Pattern.compile("^ *\\}?$");
-		Matcher endMatcher = endPattern.matcher(whereClause.substring(end));
-
-		if(endMatcher.find())
-			return true;
-		else
-			return false;
-	}
+//	private static boolean isUnionWithOptionalOrFilter(String whereClause) {
+//		Pattern filterPattern = Pattern.compile(" *FILTER[ A-Za-z]*[\\(\\{]");
+//		Matcher filterMatcher = filterPattern.matcher(whereClause);
+//		Matcher beginFilterMatcher = null;
+//		
+//		int start = 0, end = 1;
+//		beginFilterMatcher = filterPattern.matcher(whereClause.substring(end));
+//		while(beginFilterMatcher.lookingAt()) {
+//			if(!filterMatcher.find(end))
+//				try {
+//					throw new Exception("Filter error at the first stage of union");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			
+//			start = filterMatcher.end() - 1;
+//			if(whereClause.charAt(start) == '{')
+//				end = findTheBraceEnd(whereClause, start);
+//			else if (whereClause.charAt(start) == '(') 
+//				end = findTheLittleBraceEnd(whereClause, start);
+//			else {
+//				try {
+//					throw new Exception("It is not the correct brace.");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//			
+//			while(whereClause.charAt(end) == ' ')
+//				end ++;
+//			
+//			if(whereClause.charAt(end) == '.')
+//				end ++;
+//			
+//			beginFilterMatcher = filterPattern.matcher(whereClause.substring(end));
+//		}
+//		
+//		Pattern firstBracePattern = Pattern.compile(" *\\{");
+//		Matcher firstBraceMatcher = firstBracePattern.matcher(whereClause.substring(end));
+//		
+//		Pattern unionPattern = Pattern.compile("\\} *UNION *\\{");
+//		Matcher unionMatcher = unionPattern.matcher(whereClause);
+//		Matcher innerUnionMatcher = null;
+//		Matcher beginUnionMatcher = null;
+//		
+//		String bagPattern = null;
+//		if(firstBraceMatcher.lookingAt()) {
+//			firstBraceMatcher = firstBracePattern.matcher(whereClause);
+//			if(!firstBraceMatcher.find(end))
+//				try {
+//					throw new Exception("Filter error at the first stage of union");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			
+//			start = firstBraceMatcher.end() - 1;
+//			end = findTheBraceEnd(whereClause, start);
+//			
+//			bagPattern = whereClause.substring(start, end);
+//			
+//			innerUnionMatcher = unionPattern.matcher(bagPattern);
+//			if(innerUnionMatcher.find())
+//				return false;
+//			
+//			beginUnionMatcher = unionPattern.matcher(whereClause.substring(end - 1));
+//			while (beginUnionMatcher.lookingAt()) {
+//				if(!unionMatcher.find(end-1))
+//					try {
+//						throw new Exception("Filter error at the first stage of union");
+//					} catch (Exception e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//				
+//				start = unionMatcher.end() - 1;
+//				end = findTheBraceEnd(whereClause, start);
+//				
+//				bagPattern = whereClause.substring(start, end);
+//				
+//				innerUnionMatcher = unionPattern.matcher(bagPattern);
+//				if(innerUnionMatcher.find())
+//					return false;
+//				
+//				beginUnionMatcher = unionPattern.matcher(whereClause.substring(end - 1));
+//			}
+//		} else {
+//			return false;
+//		}
+//		
+//		while(whereClause.charAt(end) == ' ')
+//			end ++;
+//		
+//		if(whereClause.charAt(end) == '.')
+//			end ++;
+//		
+//		Pattern optionalAndFilterPattern = Pattern.compile("( *OPTIONAL *\\{)|( *[\\}]?FILTER[ a-zA-Z]*[\\(\\{])");
+//		Matcher optionalAndFilterMatcher = optionalAndFilterPattern.matcher(whereClause);
+//		Matcher beginOptionalAndFilterMatcher = null;
+//		
+//		beginOptionalAndFilterMatcher = optionalAndFilterPattern.matcher(whereClause.substring(end));
+//		while (beginOptionalAndFilterMatcher.lookingAt()) {
+//			if(!optionalAndFilterMatcher.find(end))
+//				try {
+//					throw new Exception("Filter error at the first stage of union");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}			
+//			
+//			start = optionalAndFilterMatcher.end()-1;
+//			if(whereClause.charAt(start) == '{')
+//				end = findTheBraceEnd(whereClause, start);
+//			else if(whereClause.charAt(start) == '(')
+//				end = findTheLittleBraceEnd(whereClause, start);
+//			else {
+//				try {
+//					throw new Exception("It is not the correct brace.");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//			
+//			while(whereClause.charAt(end) == ' ')
+//				end ++;
+//			
+//			if(whereClause.charAt(end) == '.')
+//				end ++;
+//			
+//			beginOptionalAndFilterMatcher = optionalAndFilterPattern.matcher(whereClause.substring(end));
+//		}		
+//		
+//		Pattern endPattern = Pattern.compile("^ *\\}?$");
+//		Matcher endMatcher = endPattern.matcher(whereClause.substring(end));
+//
+//		if(endMatcher.find())
+//			return true;
+//		else
+//			return false;
+//	}
 	
 	// P UNION Q OPTIONAL R FILTER T
-	private static String rewriteUnionWithOptionalOrFilter(String oldWhereClause) {
-		StringBuffer newWhereClause = null;
+//	private static String rewriteUnionWithOptionalOrFilter(String oldWhereClause) {
+//		StringBuffer newWhereClause = null;
+//		
+//		ArrayList<String> filterList = new ArrayList<String>();
+//		ArrayList<String> optionalList = new ArrayList<String>();
+//		ArrayList<String> unionList = new ArrayList<String>();
+//		
+//		Pattern filterPattern = Pattern.compile(" *FILTER[ A-Za-z]*[\\(\\{]");
+//		Matcher filterMatcher = filterPattern.matcher(oldWhereClause);
+//		Matcher beginFilterMatcher = null;
+//		
+//		int start = 0, end = 1;
+//		beginFilterMatcher = filterPattern.matcher(oldWhereClause.substring(end));
+//		while(beginFilterMatcher.lookingAt()) {
+//			if(!filterMatcher.find(end))
+//				try {
+//					throw new Exception("Rewrite error in the optional and filter form.");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			
+//			start = filterMatcher.end() - 1;
+//			if(oldWhereClause.charAt(start) == '{')
+//				end = findTheBraceEnd(oldWhereClause, start);
+//			else if (oldWhereClause.charAt(start) == '(') 
+//				end = findTheLittleBraceEnd(oldWhereClause, start);
+//			else {
+//				try {
+//					throw new Exception("Rewrite error in the optional and filter form.");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//			
+//			beginFilterMatcher = filterPattern.matcher(oldWhereClause.substring(end));
+//			
+//			while(oldWhereClause.charAt(end) == ' ')
+//				end ++;
+//			
+//			if(oldWhereClause.charAt(end) == '.')
+//				end ++;
+//			
+//			filterList.add(oldWhereClause.substring(filterMatcher.start(), end).trim());
+//		}
+//		
+//		Pattern firstBracePattern = Pattern.compile(" *\\{");
+//		Matcher firstBraceMatcher = firstBracePattern.matcher(oldWhereClause.substring(end));
+//		
+//		Pattern unionPattern = Pattern.compile("\\} *UNION *\\{");
+//		Matcher unionMatcher = unionPattern.matcher(oldWhereClause);
+//		Matcher innerUnionMatcher = null;
+//		Matcher beginUnionMatcher = null;
+//		
+//		String bagPattern = null;
+//		if(firstBraceMatcher.lookingAt()) {
+//			firstBraceMatcher = firstBracePattern.matcher(oldWhereClause);
+//			if(!firstBraceMatcher.find(end))
+//				try {
+//					throw new Exception("Rewrite error in the optional and filter form.");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			
+//			start = firstBraceMatcher.end() - 1;
+//			end = findTheBraceEnd(oldWhereClause, start);
+//			
+//			bagPattern = oldWhereClause.substring(start, end);
+//			
+//			innerUnionMatcher = unionPattern.matcher(bagPattern);
+//			if(innerUnionMatcher.find())
+//				try {
+//					throw new Exception("Rewrite error in the optional and filter form.");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			
+//			unionList.add(bagPattern.substring(1, bagPattern.length()-1).trim());
+//			
+//			beginUnionMatcher = unionPattern.matcher(oldWhereClause.substring(end - 1));
+//			while (beginUnionMatcher.lookingAt()) {
+//				if(!unionMatcher.find(end-1))
+//					try {
+//						throw new Exception("Rewrite error in the optional and filter form.");
+//					} catch (Exception e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//				
+//				start = unionMatcher.end() - 1;
+//				end = findTheBraceEnd(oldWhereClause, start);
+//				
+//				bagPattern = oldWhereClause.substring(start, end);
+//				
+//				innerUnionMatcher = unionPattern.matcher(bagPattern);
+//				if(innerUnionMatcher.find())
+//					try {
+//						throw new Exception("Rewrite error in the optional and filter form.");
+//					} catch (Exception e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//				
+//				unionList.add(bagPattern.substring(1, bagPattern.length()-1).trim());
+//				
+//				beginUnionMatcher = unionPattern.matcher(oldWhereClause.substring(end - 1));
+//			}
+//		} else {
+//			try {
+//				throw new Exception("Rewrite error in the optional and filter form.");
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		}
+//		
+//		while(oldWhereClause.charAt(end) == ' ')
+//			end ++;
+//		
+//		if(oldWhereClause.charAt(end) == '.')
+//			end ++;
+//		
+//		Pattern optionalAndFilterPattern = Pattern.compile("( *OPTIONAL *\\{)|( *[\\}]?FILTER[ a-zA-Z]*[\\(\\{])");
+//		Matcher optionalAndFilterMatcher = optionalAndFilterPattern.matcher(oldWhereClause);
+//		Matcher beginOptionalAndFilterMatcher = null;
+//		
+//		beginOptionalAndFilterMatcher = optionalAndFilterPattern.matcher(oldWhereClause.substring(end));
+//		while (beginOptionalAndFilterMatcher.lookingAt()) {
+//			if(!optionalAndFilterMatcher.find(end))
+//				try {
+//					throw new Exception("Rewrite error in the optional and filter form.");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}		
+//			
+//			start = optionalAndFilterMatcher.end()-1;
+//			if(oldWhereClause.charAt(start) == '{')
+//				end = findTheBraceEnd(oldWhereClause, start);
+//			else if(oldWhereClause.charAt(start) == '(')
+//				end = findTheLittleBraceEnd(oldWhereClause, start);
+//			else {
+//				try {
+//					throw new Exception("Rewrite error in the optional and filter form.");
+//				} catch (Exception e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//			
+//			while(oldWhereClause.charAt(end) == ' ')
+//				end ++;
+//			
+//			if(oldWhereClause.charAt(end) == '.')
+//				end ++;
+//			
+//			if(oldWhereClause.substring(optionalAndFilterMatcher.start(), optionalAndFilterMatcher.end()).contains("OPTIONAL"))
+//				optionalList.add(oldWhereClause.substring(optionalAndFilterMatcher.start(), end).trim());
+//			else
+//				filterList.add(oldWhereClause.substring(optionalAndFilterMatcher.start(), end).trim());
+//			
+//			beginOptionalAndFilterMatcher = optionalAndFilterPattern.matcher(oldWhereClause.substring(end));
+//		}		
+//		
+//		Pattern endPattern = Pattern.compile("^ *\\}?$");
+//		Matcher endMatcher = endPattern.matcher(oldWhereClause.substring(end));
+//
+//		if(!endMatcher.find())
+//			try {
+//				throw new Exception("Rewrite error in the optional and filter form.");
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		
+//		newWhereClause = new StringBuffer("");
+//		
+//		newWhereClause.append("{");
+//		
+//		StringBuffer unionClause = null;
+//		if(!unionList.isEmpty()) {
+//			boolean firstFlag = true;
+//			
+//			for(String union : unionList) {
+//				unionClause = new StringBuffer("");
+//				unionClause.append(" " + union + (union.endsWith(".") ? " " : ". "));
+//				
+//				for(String optional : optionalList) {
+//					unionClause.append(" " + optional + " ");
+//				}
+//				
+//				for(String filter : filterList) {
+//					unionClause.append(" " + filter + " ");
+//				}
+//				
+//				if(firstFlag) {
+//					newWhereClause.append(" " + "{ " + unionClause + " }" + " ");
+//				} else {
+//					newWhereClause.append(" " + "UNION" + "{ " + unionClause + " }" + " ");
+//				}
+//				
+//				firstFlag = false;
+//			}
+//			
+//		} else {
+//			try {
+//				throw new Exception("Rewrite error in the optional and filter form.");
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		}
+//		
+//		return newWhereClause.toString();
+//	}
+	
+	// P AND UNION-NORMAL-FORM AND Q
+	private static String rewriteToUnionNormalForm(String oldWhereClause) {
+		StringBuffer newWhereClause = new StringBuffer("");
 		
-		ArrayList<String> filterList = new ArrayList<String>();
-		ArrayList<String> optionalList = new ArrayList<String>();
-		ArrayList<String> unionList = new ArrayList<String>();
-		
-		Pattern filterPattern = Pattern.compile(" *FILTER[ A-Za-z]*[\\(\\{]");
-		Matcher filterMatcher = filterPattern.matcher(oldWhereClause);
-		Matcher beginFilterMatcher = null;
-		
-		int start = 0, end = 1;
-		beginFilterMatcher = filterPattern.matcher(oldWhereClause.substring(end));
-		while(beginFilterMatcher.lookingAt()) {
-			if(!filterMatcher.find(end))
-				try {
-					throw new Exception("Rewrite error in the optional and filter form.");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			
-			start = filterMatcher.end() - 1;
-			if(oldWhereClause.charAt(start) == '{')
-				end = findTheBraceEnd(oldWhereClause, start);
-			else if (oldWhereClause.charAt(start) == '(') 
-				end = findTheLittleBraceEnd(oldWhereClause, start);
-			else {
-				try {
-					throw new Exception("Rewrite error in the optional and filter form.");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			
-			beginFilterMatcher = filterPattern.matcher(oldWhereClause.substring(end));
-			
-			while(oldWhereClause.charAt(end) == ' ')
-				end ++;
-			
-			if(oldWhereClause.charAt(end) == '.')
-				end ++;
-			
-			filterList.add(oldWhereClause.substring(filterMatcher.start(), end).trim());
-		}
-		
-		Pattern firstBracePattern = Pattern.compile(" *\\{");
-		Matcher firstBraceMatcher = firstBracePattern.matcher(oldWhereClause.substring(end));
-		
-		Pattern unionPattern = Pattern.compile("\\} *UNION *\\{");
-		Matcher unionMatcher = unionPattern.matcher(oldWhereClause);
-		Matcher innerUnionMatcher = null;
-		Matcher beginUnionMatcher = null;
-		
-		String bagPattern = null;
-		if(firstBraceMatcher.lookingAt()) {
-			firstBraceMatcher = firstBracePattern.matcher(oldWhereClause);
-			if(!firstBraceMatcher.find(end))
-				try {
-					throw new Exception("Rewrite error in the optional and filter form.");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			
-			start = firstBraceMatcher.end() - 1;
-			end = findTheBraceEnd(oldWhereClause, start);
-			
-			bagPattern = oldWhereClause.substring(start, end);
-			
-			innerUnionMatcher = unionPattern.matcher(bagPattern);
-			if(innerUnionMatcher.find())
-				try {
-					throw new Exception("Rewrite error in the optional and filter form.");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			
-			unionList.add(bagPattern.substring(1, bagPattern.length()-1).trim());
-			
-			beginUnionMatcher = unionPattern.matcher(oldWhereClause.substring(end - 1));
-			while (beginUnionMatcher.lookingAt()) {
-				if(!unionMatcher.find(end-1))
-					try {
-						throw new Exception("Rewrite error in the optional and filter form.");
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				
-				start = unionMatcher.end() - 1;
-				end = findTheBraceEnd(oldWhereClause, start);
-				
-				bagPattern = oldWhereClause.substring(start, end);
-				
-				innerUnionMatcher = unionPattern.matcher(bagPattern);
-				if(innerUnionMatcher.find())
-					try {
-						throw new Exception("Rewrite error in the optional and filter form.");
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				
-				unionList.add(bagPattern.substring(1, bagPattern.length()-1).trim());
-				
-				beginUnionMatcher = unionPattern.matcher(oldWhereClause.substring(end - 1));
-			}
-		} else {
-			try {
-				throw new Exception("Rewrite error in the optional and filter form.");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		
-		while(oldWhereClause.charAt(end) == ' ')
-			end ++;
-		
-		if(oldWhereClause.charAt(end) == '.')
-			end ++;
-		
-		Pattern optionalAndFilterPattern = Pattern.compile("( *OPTIONAL *\\{)|( *[\\}]?FILTER[ a-zA-Z]*[\\(\\{])");
-		Matcher optionalAndFilterMatcher = optionalAndFilterPattern.matcher(oldWhereClause);
-		Matcher beginOptionalAndFilterMatcher = null;
-		
-		beginOptionalAndFilterMatcher = optionalAndFilterPattern.matcher(oldWhereClause.substring(end));
-		while (beginOptionalAndFilterMatcher.lookingAt()) {
-			if(!optionalAndFilterMatcher.find(end))
-				try {
-					throw new Exception("Rewrite error in the optional and filter form.");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}		
-			
-			start = optionalAndFilterMatcher.end()-1;
-			if(oldWhereClause.charAt(start) == '{')
-				end = findTheBraceEnd(oldWhereClause, start);
-			else if(oldWhereClause.charAt(start) == '(')
-				end = findTheLittleBraceEnd(oldWhereClause, start);
-			else {
-				try {
-					throw new Exception("Rewrite error in the optional and filter form.");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			
-			while(oldWhereClause.charAt(end) == ' ')
-				end ++;
-			
-			if(oldWhereClause.charAt(end) == '.')
-				end ++;
-			
-			if(oldWhereClause.substring(optionalAndFilterMatcher.start(), optionalAndFilterMatcher.end()).contains("OPTIONAL"))
-				optionalList.add(oldWhereClause.substring(optionalAndFilterMatcher.start(), end).trim());
-			else
-				filterList.add(oldWhereClause.substring(optionalAndFilterMatcher.start(), end).trim());
-			
-			beginOptionalAndFilterMatcher = optionalAndFilterPattern.matcher(oldWhereClause.substring(end));
-		}		
-		
-		Pattern endPattern = Pattern.compile("^ *\\}?$");
-		Matcher endMatcher = endPattern.matcher(oldWhereClause.substring(end));
-
-		if(!endMatcher.find())
-			try {
-				throw new Exception("Rewrite error in the optional and filter form.");
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		
-		newWhereClause = new StringBuffer("");
+		ArrayList<String> unionList = getUnionList(oldWhereClause);
 		
 		newWhereClause.append("{");
-		
-		StringBuffer unionClause = null;
 		if(!unionList.isEmpty()) {
 			boolean firstFlag = true;
 			
-			for(String union : unionList) {
-				unionClause = new StringBuffer("");
-				unionClause.append(" " + union + (union.endsWith(".") ? " " : ". "));
-				
-				for(String optional : optionalList) {
-					unionClause.append(" " + optional + " ");
-				}
-				
-				for(String filter : filterList) {
-					unionClause.append(" " + filter + " ");
-				}
-				
+			for(String union : unionList) {				
 				if(firstFlag) {
-					newWhereClause.append(" " + "{ " + unionClause + " }" + " ");
+					newWhereClause.append(" " + "{ " + union + " }" + " ");
 				} else {
-					newWhereClause.append(" " + "UNION" + "{ " + unionClause + " }" + " ");
+					newWhereClause.append(" UNION " + "{ " + union + " }" + " ");
 				}
 				
 				firstFlag = false;
@@ -723,6 +818,160 @@ public class WelldesignUtil {
 			
 		} else {
 			try {
+				throw new Exception("Rewrite error in unnormal form.");
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		newWhereClause.append("}");
+		
+		return newWhereClause.toString();
+	}
+	
+	private static ArrayList<String> getUnionList(String bagPatterns) {
+		ArrayList<String> unionNormalFormList = new ArrayList<String>();
+		
+		if(isUnionNormal(bagPatterns)) {
+			int index = 1, length = bagPatterns.length(), start, end;
+			while(index < length) {
+				if(bagPatterns.charAt(index) == '{') {
+					start = index;
+					end = findTheBraceEnd(bagPatterns, start);
+					unionNormalFormList.add(bagPatterns.substring(start + 1, end-1));
+					
+					index = end;
+				} else {
+					index ++;
+				}
+			}
+			
+			return unionNormalFormList;
+		}
+		
+		Pattern unionPattern = Pattern.compile("\\} *UNION *\\{");
+		Matcher unionMatcher = unionPattern.matcher(bagPatterns);
+		
+		String previousString = null;
+		int previousStringEnd = 0;
+		if(unionMatcher.find()) {
+			int index = unionMatcher.start();
+			int last= index + 1;
+						
+			index ++;
+			int depth = 1, length = bagPatterns.length();
+			while(index < length) {
+				if(depth == 0) {
+					depth = 1;
+					last = index;
+				}
+				
+				if(bagPatterns.charAt(index) == '{') {
+					depth ++;
+				} else if(bagPatterns.charAt(index) == '}') {
+					depth --;
+				}
+				
+				index ++;
+			}
+			
+			if(index > length)
+				try {
+					throw new Exception("It is not the correct union bagpatterns.");
+				} catch (Exception e) {
+					// TODO: handle exception
+					e.printStackTrace();
+				}
+			
+			
+			previousStringEnd = findTheBracePre(bagPatterns, last-1);
+			
+			if(previousStringEnd < 0)
+				try {
+					throw new Exception("It is not the correct union bagpatterns.");
+				} catch (Exception e) {
+					// TODO: handle exception
+					e.printStackTrace();
+				}
+			
+			previousStringEnd ++;
+			
+			previousString = bagPatterns.substring(1, previousStringEnd).trim();
+		} else 
+			try {
+				throw new Exception("It is not necessory to rewrite this query.");
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+		
+		int start, end;
+		String bagPattern = null;
+		Matcher innerMatcher = null;
+		Matcher beginMatcher = null;
+		
+		start = previousStringEnd;
+		end = findTheBraceEnd(bagPatterns, start);
+		
+		bagPattern = bagPatterns.substring(start, end);
+		innerMatcher = unionPattern.matcher(bagPattern);
+		if(innerMatcher.find()) {
+			unionNormalFormList.addAll(getUnionList(bagPattern));
+		} else {
+			unionNormalFormList.add(bagPattern.substring(1, bagPattern.length()-1).trim());
+		}
+		
+		beginMatcher = unionPattern.matcher(bagPatterns.substring(end -1));
+		unionMatcher = unionMatcher.reset();
+		while (beginMatcher.lookingAt()) {
+			if(!unionMatcher.find(end-1)) 
+				try {
+					throw new Exception("nononononono");
+				} catch (Exception e) {
+					// TODO: handle exception
+					e.printStackTrace();
+				}
+			
+			start = unionMatcher.end() - 1;
+			end = findTheBraceEnd(bagPatterns, start);
+			
+			bagPattern = bagPatterns.substring(start, end);
+			innerMatcher = unionPattern.matcher(bagPattern);
+			if(innerMatcher.find()) {
+				unionNormalFormList.addAll(getUnionList(bagPattern));
+			} else {
+				unionNormalFormList.add(bagPattern.substring(1, bagPattern.length()-1).trim());
+			}
+			
+			beginMatcher = unionPattern.matcher(bagPatterns.substring(end - 1));
+		}
+		
+		while(bagPatterns.charAt(end) == ' ')
+			end ++;
+		
+		if(bagPatterns.charAt(end) == '.')
+			end ++;
+		
+		String afterwardString = bagPatterns.substring(end, bagPatterns.length()-1).trim();
+		
+		ArrayList<String> unionList = new ArrayList<String>();
+		StringBuffer unionClause = null;
+		if(!unionNormalFormList.isEmpty()) {
+			
+			for(String union : unionNormalFormList) {
+				unionClause = new StringBuffer("");
+				
+				if(!previousString.trim().equals(""))
+					unionClause.append(" " + previousString + (previousString.endsWith(".") ? " " : " ."));				
+				unionClause.append(" " + union + (union.endsWith(".") ? " " : " ."));	
+				if(!afterwardString.trim().equals(""))
+					unionClause.append(" " + afterwardString);
+				
+				unionList.add(unionClause.toString());
+			}
+			
+		} else {
+			try {
 				throw new Exception("Rewrite error in the optional and filter form.");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -730,7 +979,7 @@ public class WelldesignUtil {
 			}
 		}
 		
-		return newWhereClause.toString();
+		return unionList;
 	}
 	
 	private static boolean unionNormalWellDesigned(String whereClause) throws Exception {
@@ -1007,6 +1256,7 @@ public class WelldesignUtil {
 		char tempChar;
 		int i = 0, length = string.length();
 		boolean flag = false;
+		boolean firstChar = false;
 		StringBuffer sb = new StringBuffer("");
 		ArrayList<String> variablesList = new ArrayList<String>();
 		for (i = 0; i < length; i++) {
@@ -1014,15 +1264,23 @@ public class WelldesignUtil {
 			if (!flag) {
 				if (tempChar == '?' || tempChar == '$') {
 					if(i > 0) {
-						if((string.charAt(i-1)>='A') && (string.charAt(i-1)<='Z')) {
+						if((string.charAt(i-1)!=' ') && (string.charAt(i-1)!='(') && (string.charAt(i-1)!='{') && (string.charAt(i-1) != '.')) {
 							continue;
 						}
 					}
 					
 					flag = true;
+					firstChar = true;
 					sb = new StringBuffer("");
 				}
 			} else {
+				if(firstChar) {
+					if(!(tempChar >= 'A' && tempChar <= 'Z'))
+						flag = false;
+						firstChar = false;
+						continue;
+				}
+				
 				if ((tempChar >= 'a' && tempChar <= 'z') || (tempChar >= 'A' && tempChar <= 'Z')
 						|| (tempChar >= '0' && tempChar <= '9') || tempChar == '_' || tempChar == '`')
 					sb.append(tempChar);
@@ -1045,7 +1303,7 @@ public class WelldesignUtil {
 		Pattern filterPattern = null;
 		Matcher filterMatcher = null;
 		
-		filterPattern = Pattern.compile("[ \\}]?FILTER[ a-zA-Z]*[\\(\\{]");
+		filterPattern = Pattern.compile("FILTER[ a-zA-Z]*[\\(\\{]");
 		filterMatcher = filterPattern.matcher(whereClause);
 		
 		// P FILTER Q
@@ -1267,7 +1525,7 @@ public class WelldesignUtil {
 			position = findTheBraceEnd(bagPattern, position);
 			optionalList.add(position);
 		}
-
+		
 //		if (!isSafe(bagPattern, optionalList))
 //			return false;
 
@@ -1475,6 +1733,38 @@ public class WelldesignUtil {
 
 		return true;
 	}
+	
+	private static String deleteFilter(String sourceString) {
+		StringBuffer destinationString = new StringBuffer("");
+		
+		Pattern filterPattern = Pattern.compile("FILTER[ a-zA-Z]*[\\(\\{]");
+		Matcher filterMatcher = filterPattern.matcher(sourceString);
+		
+		int index = 0, start, end;
+		while(filterMatcher.find(index)) {
+			start = filterMatcher.start();
+			end = filterMatcher.end() - 1;
+			
+			if(sourceString.charAt(end) == '(')
+				end = findTheLittleBraceEnd(sourceString, end);
+			else if(sourceString.charAt(end) == '{')
+				end = findTheBraceEnd(sourceString, end);
+			
+			while(sourceString.charAt(end) == ' ')
+				end ++;
+			
+			if(sourceString.charAt(end) == '.')
+				end ++;
+			
+			destinationString.append(sourceString.substring(index, start));
+			
+			index = end;
+		}
+		
+		destinationString.append(sourceString.substring(index, sourceString.length()));
+		
+		return destinationString.toString();
+	}
 
 	private static boolean travelBGP(String bagPatterns, String wholeWhereClause) {
 		if(!bagPatterns.contains("OPTIONAL"))
@@ -1533,11 +1823,11 @@ public class WelldesignUtil {
 			
 			int deleteBefore = 0;
 			
-			Pattern endPattern = Pattern.compile("^ *\\}?$");
+			Pattern endPattern = Pattern.compile(" *\\}?$");
 			Pattern deleteBrace = Pattern.compile(" *(\\.)? *[\\?\\<\\}]");
 			Matcher endMatcher = endPattern.matcher(bagPatterns.substring(start));
 			Matcher deleteBraceMatcher = deleteBrace.matcher(bagPatterns.substring(start));
-			if(!endMatcher.find()) {
+			if(!endMatcher.lookingAt()) {
 				if(deleteBraceMatcher.lookingAt()) {
 					deleteBefore = wholeWhereClause.indexOf(bagPatterns);
 					
@@ -1559,6 +1849,9 @@ public class WelldesignUtil {
 					
 					sbTemp.setCharAt(leftbrace + 1, ' ');
 					sbTemp.setCharAt(start, ' ');
+					
+					if(sbTemp.substring(leftbrace + 1, start).contains("optional"))
+						System.err.println("nononono");
 					
 					StringBuffer tempWholeWhereClause = new StringBuffer(wholeWhereClause);
 					tempWholeWhereClause.setCharAt(deleteBefore + leftbrace + 1, ' ');
