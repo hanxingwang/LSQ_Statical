@@ -41,7 +41,7 @@ public class welldesignTest {
 				end = sparqlString.lastIndexOf('\"');
 //				end = sparqlString.length();
 				if(begin < end)
-					WelldesignUtil.isWelldesign(sparqlString.substring(begin+1, end), false);
+					WelldesignUtil.isWelldesign(sparqlString.substring(begin+1, end));
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
