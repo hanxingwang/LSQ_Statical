@@ -4,14 +4,16 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.Test;
 
 import cn.tju.edu.Query.QueryStorge;
 import cn.tju.edu.dataUtil.Storge;
-import cn.tju.edu.dataUtil.WelldesignUtil;
+import cn.tju.edu.dataUtil.WelldesignedUtil;
 
-public class welldesignTest {
+public class welldesignedTest {
 	private static Storge storge = new Storge("/home/hanxingwang/Data/SesameStorage");
 	private static QueryStorge query = new QueryStorge(storge.getConnection());
 	
@@ -34,14 +36,19 @@ public class welldesignTest {
 		try {
 			fileReader = new FileReader(filePath);
 			bufferedReader = new BufferedReader(fileReader);
+			String sparqlQuery = null;
 			
 			while ((sparqlString = bufferedReader.readLine()) != null) {
 				begin = sparqlString.indexOf('\"');
 //				begin = -1;
 				end = sparqlString.lastIndexOf('\"');
 //				end = sparqlString.length();
-				if(begin < end)
-					WelldesignUtil.isWelldesign(sparqlString.substring(begin+1, end));
+				if(begin < end) {
+					sparqlQuery = sparqlString.substring(begin+1, end);
+					
+					if(isSparql1_1(sparqlQuery))
+						WelldesignedUtil.isWelldesign(sparqlQuery, false);
+				}
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -51,6 +58,21 @@ public class welldesignTest {
 			e.printStackTrace();
 		}
 		
+	}
+	
+	private boolean isSparql1_1(String sparqlQuery) {
+		String upper = sparqlQuery.toUpperCase();
+		
+		Pattern graphPattern = Pattern.compile(" *GRAPH *");
+		Pattern minusPattern = Pattern.compile(" *MINUS *");
+		
+		Matcher graphMatcher = graphPattern.matcher(upper);
+		Matcher minusMatcher = minusPattern.matcher(upper);
+		
+		if(graphMatcher.find() || minusMatcher.find()) 
+			return false;
+		else
+			return true;
 	}
 
 }

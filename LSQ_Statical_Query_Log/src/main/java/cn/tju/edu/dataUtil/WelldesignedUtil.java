@@ -8,29 +8,19 @@ import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class WelldesignUtil {
+public class WelldesignedUtil {
 	private static int totalCount = 0;
 	private static int wellCount = 0;
 	private static int notWellCount = 0;
-	private static int unionCount = 0;
-	private static int subQueryCount = 0;
-	
-	private static int unionNormalFormCount = 0;
-	private static int unUnionNormalFormCount = 0;
-	private static int canNotChangeToUnionFreeCount = 0;
-	private static int unionWithoutOptionalAndFilterClauseCount = 0;
 
-	public static boolean isWelldesign(String queryString) {
+	private static int canNotChangeToUnionFreeCount = 0;
+
+	public static boolean isWelldesign(String queryString, boolean isSubQuery) {
 		String whereClause = null;
 		String upperString = queryString.toUpperCase();
 
-		if (upperString.contains("GRAPH "))
-			return false;
-
-		if (upperString.contains("MINUS"))
-			return false;
-
-		totalCount++;
+		if (!isSubQuery)
+			totalCount++;
 
 		int whereClauseBegin, whereClauseEnd;
 
@@ -38,87 +28,88 @@ public class WelldesignUtil {
 
 		BufferedWriter wellDesignedBufferedWriter = null;
 		BufferedWriter unWellDesignedBufferedWriter = null;
-		BufferedWriter unionBufferedWriter = null;
-		BufferedWriter subQueryBufferedWriter = null;
 
 		try {
 			FileWriter wellDesignedFileWriter = new FileWriter("/home/hanxingwang/Data/SearchResult/WellDesigned",
 					true);
 			FileWriter unWellDesignedfileWriter = new FileWriter("/home/hanxingwang/Data/SearchResult/UnWellDesigned",
 					true);
-			FileWriter unionFileWriter = new FileWriter("/home/hanxingwang/Data/SearchResult/NotUnionFree", true);
-			FileWriter subQueryWriter = new FileWriter("/home/hanxingwang/Data/SearchResult/subQuery", true);
 
 			wellDesignedBufferedWriter = new BufferedWriter(wellDesignedFileWriter);
 			unWellDesignedBufferedWriter = new BufferedWriter(unWellDesignedfileWriter);
-			unionBufferedWriter = new BufferedWriter(unionFileWriter);
-			subQueryBufferedWriter = new BufferedWriter(subQueryWriter);
 
 			if (whereClauseBegin == -1) {
-				wellDesignedBufferedWriter.write(queryString + "\n");
-				wellCount++;
-				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
-						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
+				if (!isSubQuery) {
+					wellDesignedBufferedWriter.write(queryString + "\n");
+					wellCount++;
+					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+				}
 
 				return true;
 			}
-
-			Pattern subQueryPattern = Pattern.compile("\\{ *SELECT");
-			Matcher subQueryMatcher = subQueryPattern.matcher(upperString);
-
-			if (subQueryMatcher.find()) {
-				subQueryBufferedWriter.write(queryString + "\n");
-				subQueryCount++;
-				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
-						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
-
-				upperString = rewriteSelectSparql(upperString, new ArrayList<String>());
-			}
-
+			
 			if (whereClauseBegin != -1) {
 				whereClauseEnd = findTheBraceEnd(upperString, whereClauseBegin) - 1;
 			} else {
 				whereClauseEnd = -1;
 			}
-			// whereClauseEnd = upperString.lastIndexOf('}');
-
+			
 			whereClause = upperString.substring(whereClauseBegin, whereClauseEnd + 1);
-
 			whereClause = filterNormalForm(whereClause);
-
+			
+			upperString = whereClause.toUpperCase();
+			
 			if (!isSafe(whereClause)) {
 				unWellDesignedBufferedWriter.write(queryString + "\n");
 				notWellCount++;
-				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
-						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
+				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount);
 
 				return false;
 			}
 
-			upperString = whereClause.toUpperCase();
+			Pattern subQueryPattern = Pattern.compile("\\{ *SELECT");
+			Matcher subQueryMatcher = subQueryPattern.matcher(whereClause);
 
-			Pattern unionPattern = Pattern.compile("\\} *UNION *\\{");
-			Matcher unionMatcher = unionPattern.matcher(upperString);
-
-			if (unionMatcher.find()) {
-				unionBufferedWriter.write(queryString + "\n");
-				unionCount++;
-				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
-						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
-
-				if (isUnionWellDesigned(upperString)) {
-					wellDesignedBufferedWriter.write(queryString + "\n");
-					wellCount++;
-					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"
-							+ notWellCount + " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
+			if (subQueryMatcher.find()) {				
+				whereClause = rewriteSelectSparql(whereClause, new ArrayList<String>());
+				
+				if(isSubQueryWellDesigned(whereClause)) {
+					if (!isSubQuery) {
+						wellDesignedBufferedWriter.write(queryString + "\n");
+						wellCount++;
+						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+					}
 
 					return true;
 				} else {
+					if (!isSubQuery) {
+						unWellDesignedBufferedWriter.write(queryString + "\n");
+						notWellCount++;
+						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+					}
 
-					unWellDesignedBufferedWriter.write(queryString + "\n");
-					notWellCount++;
-					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"
-							+ notWellCount + " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
+					return false;
+				}
+			}
+
+			Pattern unionPattern = Pattern.compile("\\} *UNION *\\{");
+			Matcher unionMatcher = unionPattern.matcher(whereClause);
+
+			if (unionMatcher.find()) {
+				if (isUnionWellDesigned(whereClause)) {
+					if (!isSubQuery) {
+						wellDesignedBufferedWriter.write(queryString + "\n");
+						wellCount++;
+						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount);
+					}
+
+					return true;
+				} else {
+					if (!isSubQuery) {
+						unWellDesignedBufferedWriter.write(queryString + "\n");
+						notWellCount++;
+						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+					}
 
 					return false;
 				}
@@ -126,17 +117,19 @@ public class WelldesignUtil {
 			}
 
 			if (isOptionalWellDesigned(whereClause)) {
-				wellDesignedBufferedWriter.write(queryString + "\n");
-				wellCount++;
-				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
-						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
+				if (!isSubQuery) {
+					wellDesignedBufferedWriter.write(queryString + "\n");
+					wellCount++;
+					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+				}
 
 				return true;
 			} else {
-				unWellDesignedBufferedWriter.write(queryString + "\n");
-				notWellCount++;
-				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
-						+ " UnionCount:" + unionCount + " subqueryCount: " + subQueryCount);
+				if (!isSubQuery) {
+					unWellDesignedBufferedWriter.write(queryString + "\n");
+					notWellCount++;
+					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+				}
 
 				return false;
 			}
@@ -144,23 +137,18 @@ public class WelldesignUtil {
 			e.printStackTrace();
 		} finally {
 			try {
-				unionBufferedWriter.flush();
 				wellDesignedBufferedWriter.flush();
 				unWellDesignedBufferedWriter.flush();
-				subQueryBufferedWriter.flush();
 
-				unionBufferedWriter.close();
 				wellDesignedBufferedWriter.close();
 				unWellDesignedBufferedWriter.close();
-				subQueryBufferedWriter.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 
-		System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount
-				+ " UnionCount:" + unionCount + "subqueryCount: " + subQueryCount);
+		System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount);
 		return true;
 	}
 	
@@ -283,51 +271,48 @@ public class WelldesignUtil {
 		return oldWhereClause;
 	}
 	
+	private static boolean isSubQueryWellDesigned(String whereClause) {
+		Pattern subQueryPattern = Pattern.compile("\\{ *SELECT");
+		Matcher subQueryMatcher = subQueryPattern.matcher(whereClause);
+		
+		if(subQueryMatcher.find()) {			
+			whereClause = repalceSubQueryWithVariables(whereClause);
+			
+			if(whereClause.equals("-1"))
+				return false;
+			
+			if(isOptionalWellDesigned(whereClause))
+				return true;
+			else 
+				return false;
+		} else 
+			try {
+				throw new Exception("There are not subquery!");
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+		
+		return true;
+	}
+	
 	private static boolean isUnionWellDesigned(String whereClause) {
-		BufferedWriter unionNormalFormBufferedWriter = null;
-		BufferedWriter unUnionNormalFormBufferedWriter = null;
 		BufferedWriter canNotChangeToUnionFreeBufferedWriter = null;
-		BufferedWriter unionWithoutOptionalAndFilterClauseBufferedWriter = null;
-//		BufferedWriter theRestBufferedWrite = null;
 
 		try {
-			FileWriter unionNormalFormWrite = new FileWriter("/home/hanxingwang/Data/SearchResult/unionNormalForm",
-					true);
-			FileWriter unUnionNormalFormWrite = new FileWriter("/home/hanxingwang/Data/SearchResult/unUnionNormalForm",
-					true);
 			FileWriter canNotChangeToUnionFreeWrite = new FileWriter(
 					"/home/hanxingwang/Data/SearchResult/canNotChangeToUnionNormalForm", true);
-			FileWriter unionWithoutOptionalAndFilterClauseWrite = new FileWriter(
-			 "/home/hanxingwang/Data/SearchResult/unionWithoutOptionalAndFilterClause",
-			 true);
-//			FileWriter theRestWrite = new FileWriter("/home/hanxingwang/Data/SearchResult/TheRest", true);
 
-
-			unionNormalFormBufferedWriter = new BufferedWriter(unionNormalFormWrite);
-			unUnionNormalFormBufferedWriter = new BufferedWriter(unUnionNormalFormWrite);
 			canNotChangeToUnionFreeBufferedWriter = new BufferedWriter(canNotChangeToUnionFreeWrite);
-			unionWithoutOptionalAndFilterClauseBufferedWriter = new BufferedWriter(unionWithoutOptionalAndFilterClauseWrite);
-//			theRestBufferedWrite = new BufferedWriter(theRestWrite);
 
-			// do not have the optional and filter key world
+			// do not have the optional key world
 			if (isUnionWithoutOptional(whereClause)) {
-				unionWithoutOptionalAndFilterClauseBufferedWriter.write(whereClause + "\n");
-				unionWithoutOptionalAndFilterClauseCount++;
-				System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
-						+ " unUnionNormalForm:" + unUnionNormalFormCount + " canNotChangeToUnionNormalFree:"
-						+ canNotChangeToUnionFreeCount + " unionWithoutOptionalAndFilterClause:"
-						+ unionWithoutOptionalAndFilterClauseCount);
-
 				return true;
 			}
 			
-			if (isOptionalUnionFree(whereClause)) {
+			if (!isOptionalUnionFree(whereClause)) {
 				canNotChangeToUnionFreeBufferedWriter.write(whereClause + "\n");
 				canNotChangeToUnionFreeCount++;
-				System.out.println("total: " + totalCount + " unionNormalFormCount:" + unionNormalFormCount
-						+ " unUnionNormalForm:" + unUnionNormalFormCount + " canNotChangeToUnionNormalFree:"
-						+ canNotChangeToUnionFreeCount + " unionWithoutOptionalAndFilterClause:"
-						+ unionWithoutOptionalAndFilterClauseCount);
+				System.out.println("total: " + totalCount + " canNotChangeToUnionNormalFree:" + canNotChangeToUnionFreeCount);
 
 				return false;
 			}
@@ -352,18 +337,8 @@ public class WelldesignUtil {
 			e.printStackTrace();
 		} finally {
 			try {
-				unionNormalFormBufferedWriter.flush();
-				unUnionNormalFormBufferedWriter.flush();
 				canNotChangeToUnionFreeBufferedWriter.flush();
-				unionWithoutOptionalAndFilterClauseBufferedWriter.flush();
-//				theRestBufferedWrite.flush();
-
-				unionNormalFormBufferedWriter.close();
-				unUnionNormalFormBufferedWriter.close();
 				canNotChangeToUnionFreeBufferedWriter.close();
-				unionWithoutOptionalAndFilterClauseBufferedWriter.close();
-//				theRestBufferedWrite.close();
-
 			} catch (Exception e) {
 				// TODO: handle exception
 				e.printStackTrace();
@@ -391,10 +366,10 @@ public class WelldesignUtil {
 			
 			innerUnionMatcher = unionPattern.matcher(bagPattern);
 			if(innerUnionMatcher.find())
-				return true;
+				return false;
 		}
 		
-		return false;
+		return true;
 	}
 	
 	// do not have optional and filter key word
@@ -854,74 +829,6 @@ public class WelldesignUtil {
 		return i;
 	}
 
-	private static int findTheBraceEndWithOptionalAndFilter(String bagPatterns, int start, String wholeWhereClause) {
-		int end = bagPatterns.length();
-
-		Pattern optionalAndFilterPattern = Pattern.compile("( *OPTIONAL *\\{)|( *[ \\}]?FILTER[ a-zA-Z]*[\\(\\{])");
-		Matcher matcher = null;
-
-		start = findTheBraceEnd(bagPatterns, start);
-		
-		try {
-		while (bagPatterns.charAt(start) == ' ') {
-			start ++;
-		}
-		
-		if(bagPatterns.charAt(start) == '.') {
-			start ++;
-		}
-		}catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		while (start < end) {
-			matcher = optionalAndFilterPattern.matcher(bagPatterns.substring(start));
-
-			if (matcher.lookingAt()) {
-				if (bagPatterns.charAt(start + matcher.end() - 1) == '{')
-					start = findTheBraceEnd(bagPatterns, start + matcher.end() - 1);
-				else if (bagPatterns.charAt(start + matcher.end() - 1) == '(') {
-					start = findTheLittleBraceEnd(bagPatterns, start + matcher.end() - 1);
-				} else {
-					try {
-						throw new Exception("It is not the correct brace.");
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-				
-				while (bagPatterns.charAt(start) == ' ') {
-					start ++;
-				}
-				
-				if(bagPatterns.charAt(start) == '.') {
-					start ++;
-				}
-			} else {
-				break;
-			}
-		}
-		
-//		while (start < end) {
-//			matcher = optionalAndFilterPattern.matcher(bagPatterns.substring(start + 1));
-//
-//			if (matcher.find()) {
-//				if(bagPatterns.charAt(start + matcher.end()) == '{')
-//					start = findTheBraceEnd(bagPatterns, start + matcher.end());
-//				else if(bagPatterns.charAt(start + matcher.end()) == '(') {
-//					start = findTheLittleBraceEnd(bagPatterns, start + matcher.end());
-//				} else {
-//					throw new Exception("It is not the correct brace.");
-//				}
-//			} else {
-//				break;
-//			}
-//		}
-
-		return start;
-	}
-
 	private static ArrayList<String> getVariables(String string) {
 		char tempChar;
 		int i = 0, length = string.length();
@@ -1067,20 +974,20 @@ public class WelldesignUtil {
 		return true;
 	}
 	
-	private static String repalceSubQueryWithVariables(String bagPatterns) {
+	private static String repalceSubQueryWithVariables(String whereClause) {
 		// to do: process subquery
 		Pattern subQueryPattern = Pattern.compile("\\{ *SELECT");
-		Matcher subQueryMatcher = subQueryPattern.matcher(bagPatterns);
+		Matcher subQueryMatcher = subQueryPattern.matcher(whereClause);
 		int begin = 0;
 		while (subQueryMatcher.find(begin)) {
 
 			int subStart = subQueryMatcher.start();
-			int subEnd = findTheBraceEnd(bagPatterns, subStart);
+			int subEnd = findTheBraceEnd(whereClause, subStart);
 			String subQueryString = null;
 
-			subQueryString = bagPatterns.substring(subStart, subEnd).trim();
+			subQueryString = whereClause.substring(subStart, subEnd).trim();
 
-			if (!isWelldesign(subQueryString.substring(1, subQueryString.length() - 1))) {
+			if (!isWelldesign(subQueryString.substring(1, subQueryString.length() - 1), true)) {
 				return "-1";
 			}
 
@@ -1091,7 +998,7 @@ public class WelldesignUtil {
 			String replaceString = "";
 
 			if (subStart > 0) {
-				replaceString += bagPatterns.substring(0, subStart);
+				replaceString += whereClause.substring(0, subStart);
 			}
 
 			// {{subquery} opt {}}
@@ -1106,336 +1013,87 @@ public class WelldesignUtil {
 
 			begin = replaceString.length();
 
-			if (subEnd < bagPatterns.length()) {
-				replaceString += bagPatterns.substring(subEnd, bagPatterns.length());
+			if (subEnd < whereClause.length()) {
+				replaceString += whereClause.substring(subEnd, whereClause.length());
 			}
 
-			bagPatterns = replaceString;
+			whereClause = replaceString;
 
-			subQueryMatcher = subQueryPattern.matcher(bagPatterns);
+			subQueryMatcher = subQueryPattern.matcher(whereClause);
 		}
 		
-		return bagPatterns;
+		return whereClause;
 	}
 	
 	private static boolean isOptionalWellDesigned(String whereClause) {
 		if(!whereClause.contains("OPTIONAL"))
 			return true;
 		
-//		Pattern optionalPattern = Pattern
+		Pattern optionalPattern = Pattern.compile("OPTIONAL *\\{");
+		Matcher optionalMatcher = optionalPattern.matcher(whereClause);
+		
+		int Qstart, Qend, Rstart, Rend, Pstart, Pend, index = 0;
+		String Pstring, Qstring, Rstring, outString;
+		// process R = P OPT Q
+		while(optionalMatcher.find(index)) {
+			Qstart = optionalMatcher.end() - 1;
+			Qend = findTheBraceEnd(whereClause, Qstart);
+			
+			Rend = Qend;
+			int depth = 1, length = whereClause.length();
+			while(Rend < length) {
+				if(whereClause.charAt(Rend) == '{')
+					depth ++;
+				else if(whereClause.charAt(Rend) == '}')
+					depth --;
+				
+				Rend ++;
+				
+				if(depth == 0)
+					break;
+			}
+			
+			Rstart = findTheBracePre(whereClause, Rend-1);
+			Rstart ++;
+			
+			Pstart = Rstart + 1;
+			Pend = Qstart;
+
+			Pstring = whereClause.substring(Pstart, Pend);
+			Qstring = whereClause.substring(Qstart, Qend);
+			Rstring = whereClause.substring(Pstart, Qend);
+
+			int before = whereClause.indexOf(Rstring);
+			int after = before + Rstring.length();
+
+			outString = "";
+			if(before != -1)
+				outString += whereClause.substring(0, before);
+			if(after < whereClause.length())
+				outString += whereClause.substring(after);
+
+			ArrayList<String> QVariables = new ArrayList<String>();
+			ArrayList<String> outsideVariables = new ArrayList<String>();
+			ArrayList<String> PVariables = new ArrayList<String>();
+
+			QVariables = getVariables(Qstring);
+			outsideVariables = getVariables(outString);
+			PVariables = getVariables(Pstring);
+
+			String tempString = null;
+			Iterator<String> iteratorString = null;
+			iteratorString = QVariables.iterator();
+			while (iteratorString.hasNext()) {
+				tempString = iteratorString.next();
+				if (outsideVariables.contains(tempString))
+					if (!PVariables.contains(tempString))
+						return false;
+			}
+		
+			index = Qstart;
+		}
 		
 		return true;
 	}
-
-//	private static boolean isInnerOptionalWellDesigned(String bagPattern, String wholeWhereClause) {	
-//		Pattern innerOptionalPattern = null;
-//		Matcher innerOptionalMatcher = null;
-//
-//		innerOptionalPattern = Pattern.compile("OPTIONAL *\\{");
-//		innerOptionalMatcher = innerOptionalPattern.matcher(bagPattern);
-//
-//		int position = 0;
-//		ArrayList<Integer> optionalList = new ArrayList<Integer>();
-//		while (innerOptionalMatcher.find(position)) {
-//			position = innerOptionalMatcher.end() - 1;
-//			optionalList.add(position);
-//			position = findTheBraceEnd(bagPattern, position);
-//			optionalList.add(position);
-//		}
-//		
-////		if (!isSafe(bagPattern, optionalList))
-////			return false;
-//
-//		int start, end;
-//		Iterator<Integer> iterator = null;
-//		iterator = optionalList.iterator();
-//		while (iterator.hasNext()) {
-//			start = iterator.next();
-//			end = iterator.next();
-//
-//			try {
-//				if (!travelBGP(bagPattern.substring(start, end), wholeWhereClause))
-//					return false;
-//			} catch (Exception e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//
-//			// process P = Q OPT R
-//			String Pstring, Qstring, Rstring, outString;
-//
-//			Pstring = bagPattern.substring(0, end);
-//			Qstring = bagPattern.substring(0, start);
-//			Rstring = bagPattern.substring(start, end);
-//
-//			int before = wholeWhereClause.indexOf(Pstring);
-//			int after = before + Pstring.length();
-//
-//			outString = "";
-//			if(before != -1)
-//				outString += wholeWhereClause.substring(0, before);
-//			if(after < wholeWhereClause.length())
-//				outString += wholeWhereClause.substring(after);
-//
-//			ArrayList<String> insideRVariables = new ArrayList<String>();
-//			ArrayList<String> outsideVariables = new ArrayList<String>();
-//			ArrayList<String> insideQVariables = new ArrayList<String>();
-//
-//			insideRVariables = getVariables(Rstring);
-//			outsideVariables = getVariables(outString);
-//			insideQVariables = getVariables(Qstring);
-//
-//			String tempString = null;
-//			Iterator<String> iteratorString = null;
-//			iteratorString = insideRVariables.iterator();
-//			while (iteratorString.hasNext()) {
-//				tempString = iteratorString.next();
-//				if (outsideVariables.contains(tempString))
-//					if (!insideQVariables.contains(tempString))
-//						return false;
-//			}
-//		}
-//
-//		return true;
-//	}
-//
-//	private static boolean isOuterOptionalWellDesigned(String bagPattern, String wholeWhereClause) {
-//		Pattern subQueryPattern = Pattern.compile("\\{ *SELECT");
-//		Matcher subQueryMatcher = subQueryPattern.matcher(bagPattern);
-//		
-//		if(subQueryMatcher.find()) {
-//			int bagPatternStart = wholeWhereClause.indexOf(bagPattern);
-//			int bagPatternEnd = bagPatternStart + bagPattern.length();
-//			
-//			bagPattern = repalceSubQueryWithVariables(bagPattern);
-//			
-//			if(bagPattern.equals("-1"))
-//				return false;
-//			
-//			String newWholeWhereClause = "";
-//			if(bagPatternStart > 0) 
-//				newWholeWhereClause += wholeWhereClause.substring(0, bagPatternStart);
-//			newWholeWhereClause += bagPattern;
-//			if(bagPatternEnd < wholeWhereClause.length() - 1)
-//				newWholeWhereClause += wholeWhereClause.substring(bagPatternEnd, wholeWhereClause.length());
-//			
-//			wholeWhereClause = newWholeWhereClause;
-//		}
-//		
-//		int oneBgpEnd = findTheBraceEnd(bagPattern, 0);
-//		
-//		int position, start, end;
-//
-//		if (oneBgpEnd < bagPattern.length()) {
-//			StringBuffer sbTemp = new StringBuffer(bagPattern);
-//
-//			Pattern optionalAndFilterPattern = Pattern.compile(" *[\\}]?FILTER[ a-zA-Z]*[\\(\\{]");
-//			Matcher matcher = null;
-//
-//			start = oneBgpEnd;
-//			position = start - 1;
-//
-//			while (bagPattern.charAt(start) == ' ') {
-//				start++;
-//			}
-//
-//			if (bagPattern.charAt(start) == '.') {
-//				start++;
-//			}
-//
-//			end = bagPattern.length();
-//
-//			while (start < end) {
-//				matcher = optionalAndFilterPattern.matcher(bagPattern.substring(start));
-//
-//				if (matcher.lookingAt()) {
-//					if (sbTemp.charAt(start + matcher.end() - 1) == '{')
-//						start = findTheBraceEnd(sbTemp.toString(), start + matcher.end() - 1);
-//					else if (sbTemp.charAt(start + matcher.end() - 1) == '(') {
-//						start = findTheLittleBraceEnd(sbTemp.toString(), start + matcher.end() - 1);
-//
-//						if(start < end) {
-//						while (bagPattern.charAt(start) == ' ') {
-//							start++;
-//						}
-//
-//						if (bagPattern.charAt(start) == '.') {
-//							start++;
-//						}
-//						}
-//
-//						sbTemp.deleteCharAt(position);
-//						sbTemp.insert(start-1, '}');
-//						position = start-1;
-//					} else {
-//						try {
-//							throw new Exception("It is not the correct brace.");
-//						} catch (Exception e) {
-//							// TODO Auto-generated catch block
-//							e.printStackTrace();
-//						}
-//					}
-//				} else {
-//					break;
-//				}
-//			}
-//
-//			bagPattern = sbTemp.toString();
-//
-//			oneBgpEnd = findTheBraceEnd(bagPattern, 0);
-//		}
-//		
-//		if (!isInnerOptionalWellDesigned(bagPattern.substring(0, oneBgpEnd), wholeWhereClause))
-//			return false;
-//
-//		Pattern outerOptionalPattern = null;
-//		Matcher outerOptionalMatcher = null;
-//		Matcher decideOptionalMatcher = null;
-//
-//		outerOptionalPattern = Pattern.compile("\\} *[\\.]? *OPTIONAL *\\{");
-//		outerOptionalMatcher = outerOptionalPattern.matcher(bagPattern);
-//
-//		String Pstring, Qstring, Rstring, outString;
-//
-//		ArrayList<String> insideRVariables = new ArrayList<String>();
-//		ArrayList<String> outsideVariables = new ArrayList<String>();
-//		ArrayList<String> insideQVariables = new ArrayList<String>();
-//
-//		position = oneBgpEnd-1;
-//		while (outerOptionalMatcher.find(position)) {
-//			decideOptionalMatcher = outerOptionalPattern.matcher(bagPattern.substring(position));
-//			
-//			if(!decideOptionalMatcher.lookingAt())
-//				System.err.println("hah");
-//			
-//			
-//			start = outerOptionalMatcher.end() - 1;
-//			end = findTheBraceEnd(bagPattern, start);
-//
-//			position = end - 1;
-//
-//			if (!travelBGP(bagPattern.substring(start, end), wholeWhereClause))
-//				return false;
-//
-//			Pstring = bagPattern.substring(0, end);
-//			Qstring = bagPattern.substring(0, start);
-//			Rstring = bagPattern.substring(start, end);
-//
-//			int before = wholeWhereClause.indexOf(Pstring);
-//			int after = before + Pstring.length();
-//
-//			outString = wholeWhereClause.substring(0, before) + wholeWhereClause.substring(after);
-//
-//			insideRVariables = getVariables(Rstring);
-//			outsideVariables = getVariables(outString);
-//			insideQVariables = getVariables(Qstring);
-//
-//			String tempString = null;
-//			Iterator<String> iteratorString = null;
-//			iteratorString = insideRVariables.iterator();
-//			while (iteratorString.hasNext()) {
-//				tempString = iteratorString.next();
-//				if (outsideVariables.contains(tempString))
-//					if (!insideQVariables.contains(tempString))
-//						return false;
-//			}
-//		}
-//		
-//		Pattern endPattern = Pattern.compile("^\\} *[\\.]? *$");
-//		Matcher endMatcher = endPattern.matcher(bagPattern.substring(position));
-//		
-//		if(!endMatcher.find())
-//			System.err.println("nonono");
-//		
-//
-//		return true;
-//	}
-
-//	private static boolean travelBGP(String bagPatterns, String wholeWhereClause) {
-//		if(!bagPatterns.contains("OPTIONAL"))
-//			return true;
-//		
-//		Pattern firstPattern = null;
-//		Pattern andPattern = null;
-//
-//		firstPattern = Pattern.compile("\\{ *\\{");
-//		// unionAndPattern = Pattern.compile("( *UNION *\\{)|( *\\{)");
-//		andPattern = Pattern.compile(" *\\{");
-//
-//		Matcher firstMatcher = null;
-//		Matcher andMatcher = null;
-//
-//		boolean isWellDesign = true;
-//
-//		firstMatcher = firstPattern.matcher(bagPatterns);
-//
-//		if (!firstMatcher.lookingAt()) {
-//			try {
-//				isWellDesign = isOuterOptionalWellDesigned(bagPatterns, wholeWhereClause);
-//			} catch (Exception e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//		} else {
-//			int start = 1, end = 0, cut = 0;
-//			
-//			andMatcher = andPattern.matcher(bagPatterns.substring(start));
-//			cut = start;
-//			while(andMatcher.lookingAt()) {
-//				start = cut + andMatcher.end() - 1;
-//				try {
-//					end = findTheBraceEndWithOptionalAndFilter(bagPatterns, start, wholeWhereClause);
-//				} catch (Exception e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//				isWellDesign = isWellDesign
-//						&& travelBGP(bagPatterns.substring(start, end).trim(), wholeWhereClause);
-//				start = end;
-//				cut = start;
-//				andMatcher = andPattern.matcher(bagPatterns.substring(start));
-//			}
-//			
-//			int deleteBefore = 0;
-//			
-//			Pattern endPattern = Pattern.compile(" *\\}?$");
-//			Pattern deleteBrace = Pattern.compile(" *(\\.)? *[\\?\\<\\}]");
-//			Matcher endMatcher = endPattern.matcher(bagPatterns.substring(start));
-//			Matcher deleteBraceMatcher = deleteBrace.matcher(bagPatterns.substring(start));
-//			if(!endMatcher.lookingAt()) {
-//				if(deleteBraceMatcher.lookingAt()) {
-//					deleteBefore = wholeWhereClause.indexOf(bagPatterns);
-//					
-//					StringBuffer sbTemp = new StringBuffer(bagPatterns);
-//					start --;
-//					while (bagPatterns.charAt(start) != '}') {
-//						start --;
-//					}
-//					
-//					int leftbrace = findTheBracePre(bagPatterns, start);
-//					
-//					sbTemp.setCharAt(leftbrace + 1, ' ');
-//					sbTemp.setCharAt(start, ' ');
-//					
-//					if(sbTemp.substring(leftbrace + 1, start).contains("optional"))
-//						System.err.println("nononono");
-//					
-//					StringBuffer tempWholeWhereClause = new StringBuffer(wholeWhereClause);
-//					tempWholeWhereClause.setCharAt(deleteBefore + leftbrace + 1, ' ');
-//					tempWholeWhereClause.setCharAt(deleteBefore + start, ' ');
-//					
-//					return travelBGP(sbTemp.toString(), tempWholeWhereClause.toString());
-//				}
-//				
-//				try {
-//					throw new Exception("Not to the end");
-//				} catch (Exception e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//			}
-//		}
-//
-//		return isWellDesign;
-//	}
+	
 }
