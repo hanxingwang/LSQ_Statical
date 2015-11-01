@@ -21,7 +21,7 @@
   	</dependency>
   	<dependency>
   		<groupId>org.apache.jena</groupId>
-  		<artifactId>apache-jena-libs</artifactId>
+  		<artifactId>jena-tdb</artifactId>
   		<version>3.0.0</version>
   	</dependency>
   </dependencies>

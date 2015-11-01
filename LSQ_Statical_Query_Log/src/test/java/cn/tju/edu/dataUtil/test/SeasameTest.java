@@ -7,7 +7,11 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
 import org.junit.Test;
+
+import jena.query;
 
 public class SeasameTest {
 	@Test
@@ -32,17 +36,14 @@ public class SeasameTest {
 				if(begin < end) {
 					sparqlQuery = sparqlString.substring(begin+1, end);
 					
-					if(isSparql1_1(sparqlQuery)){
-						if(sparqlQuery.contains("CONSTRUCT"))
-							continue;
+					if(isSparql1_1(sparqlQuery)){						
+						Query query = new Query();						
+						query = QueryFactory.create(sparqlQuery);
 						
-						if(sparqlQuery.contains("ASK"))
-							continue;
-						
-						if(sparqlQuery.contains("DESCRIBE"))
-							continue;
-						
-						
+						if(query.isSelectType()) {
+							query.getGraphURIs().clear();
+							sparqlQuery = query.toString();
+						}
 					}
 				}
 			}
