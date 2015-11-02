@@ -10,8 +10,8 @@ import java.util.regex.Pattern;
 import org.junit.Test;
 
 import cn.tju.edu.Query.QueryStorge;
-import cn.tju.edu.dataUtil.Storge;
 import cn.tju.edu.dataUtil.WelldesignedUtil;
+import cn.tju.edu.dataprocess.Storge;
 
 public class welldesignedTest {
 	private static Storge storge = new Storge("/home/hanxingwang/Data/SesameStorage");

@@ -4,48 +4,92 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.jena.query.Query;
-import org.apache.jena.query.QueryFactory;
 import org.junit.Test;
+import org.openrdf.query.MalformedQueryException;
+import org.openrdf.query.algebra.Projection;
+import org.openrdf.query.algebra.TupleExpr;
+import org.openrdf.query.algebra.UnaryTupleOperator;
+import org.openrdf.query.parser.ParsedQuery;
+import org.openrdf.query.parser.sparql.SPARQLParser;
 
-import jena.query;
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryFactory;
 
 public class SeasameTest {
 	@Test
 	public void a_testSeasame() {
 		String sparqlString = null;
 		String filePath = "/home/hanxingwang/Data/SearchResult/QueryText";
-//		String filePath = "/home/hanxingwang/Data/SearchResult/NotUnionFree";
+		// String filePath = "/home/hanxingwang/Data/SearchResult/NotUnionFree";
 		FileReader fileReader = null;
 		BufferedReader bufferedReader = null;
-		
+
+		ArrayList<String> tupleExprNames = null;
+
 		int begin, end;
+		int count = 0;
 		try {
 			fileReader = new FileReader(filePath);
 			bufferedReader = new BufferedReader(fileReader);
 			String sparqlQuery = null;
-			
+			String tupleExprName = null;
+
+			Projection projection = null;
+			tupleExprNames = new ArrayList<String>();
+
 			while ((sparqlString = bufferedReader.readLine()) != null) {
 				begin = sparqlString.indexOf('\"');
-//				begin = -1;
+				// begin = -1;
 				end = sparqlString.lastIndexOf('\"');
-//				end = sparqlString.length();
-				if(begin < end) {
-					sparqlQuery = sparqlString.substring(begin+1, end);
-					
-					if(isSparql1_1(sparqlQuery)){						
-						Query query = new Query();						
+				// end = sparqlString.length();
+				if (begin < end) {
+					sparqlQuery = sparqlString.substring(begin + 1, end);
+
+					Query query = new Query();
+					try {
 						query = QueryFactory.create(sparqlQuery);
-						
-						if(query.isSelectType()) {
-							query.getGraphURIs().clear();
-							sparqlQuery = query.toString();
-						}
+					} catch (Exception e) {
+						continue;
 					}
+
+					query.getGraphURIs().clear();
+					sparqlQuery = query.toString();
+
+					SPARQLParser parser = new SPARQLParser();
+					ParsedQuery parsedQuery = null;
+					TupleExpr tupleExpr = null;
+					try {
+						parsedQuery = parser.parseQuery(sparqlQuery, null);
+						tupleExpr = parsedQuery.getTupleExpr();
+						
+						while (!Projection.class.isInstance(tupleExpr)) {
+							UnaryTupleOperator unaryTupleOperator = null;
+							unaryTupleOperator = (UnaryTupleOperator)tupleExpr;
+							tupleExpr = unaryTupleOperator.getArg();
+						}
+						
+						projection = (Projection)tupleExpr;
+						
+						tupleExprName = projection.getArg().getClass().getSimpleName();
+
+						if (!tupleExprNames.contains(tupleExprName))
+							tupleExprNames.add(tupleExprName);
+
+						count++;
+						if (count % 10000 == 0) {
+							System.out.println("We have " + count + " sparql queries");
+						}
+					} catch (MalformedQueryException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
 				}
+
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -55,20 +99,11 @@ public class SeasameTest {
 			e.printStackTrace();
 		}
 		
-	}
-	
-	private boolean isSparql1_1(String sparqlQuery) {
-		String upper = sparqlQuery.toUpperCase();
-		
-		Pattern graphPattern = Pattern.compile(" *GRAPH *");
-		Pattern minusPattern = Pattern.compile(" *MINUS *");
-		
-		Matcher graphMatcher = graphPattern.matcher(upper);
-		Matcher minusMatcher = minusPattern.matcher(upper);
-		
-		if(graphMatcher.find() || minusMatcher.find()) 
-			return false;
-		else
-			return true;
+		System.out.println(count);
+
+		for (String tupleExprName : tupleExprNames) {
+			System.out.println(tupleExprName);
+		}
+
 	}
 }

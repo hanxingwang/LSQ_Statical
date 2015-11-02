@@ -5,7 +5,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import cn.tju.edu.Query.QueryStorge;
-import cn.tju.edu.dataUtil.Storge;
+import cn.tju.edu.dataprocess.Storge;
 
 @FixMethodOrder(MethodSorters.DEFAULT)
 public class StorgeAndQueryTest {
