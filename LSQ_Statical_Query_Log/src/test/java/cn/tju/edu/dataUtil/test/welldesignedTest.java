@@ -19,7 +19,7 @@ public class welldesignedTest {
 	
 	@Test
 	public void a_testGetSource() {
-		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> PREFIX sp:<http://spinrdf.org/sp#> SELECT DISTINCT ?text WHERE {  ?id lsqv:triplePatterns ?triples. ?id lsqv:usesFeature ?feature . ?id sp:text ?text }";
+		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> PREFIX sp:<http://spinrdf.org/sp#> SELECT DISTINCT ?text WHERE {  ?id lsqv:usesFeature ?feature . ?id sp:text ?text }";
 		
 		query.QueryToFile(queryString, "/home/hanxingwang/Data/SearchResult/Fragment");
 	}

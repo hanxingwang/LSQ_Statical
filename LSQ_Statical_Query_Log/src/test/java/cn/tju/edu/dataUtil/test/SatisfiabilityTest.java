@@ -1,13 +1,11 @@
 package cn.tju.edu.dataUtil.test;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.Test;
 
 import com.hp.hpl.jena.query.Query;
@@ -15,16 +13,15 @@ import com.hp.hpl.jena.query.QueryFactory;
 
 import cn.tju.edu.dataUtil.FragmentUtil;
 
-public class FragmentUtilTest {	
+public class SatisfiabilityTest {
 	@Test
 	public void a_testFragment() {
 		String sparqlString = null;
-		String filePath = "/home/hanxingwang/Data/SearchResult/Fragment";
-		// String filePath = "/home/hanxingwang/Data/SearchResult/NotUnionFree";
+		String filePath = "/home/hanxingwang/Data/SearchResult/ZeroResultQuery";
 		FileReader fileReader = null;
 		BufferedReader bufferedReader = null;
+		BufferedWriter bw = null;
 		
-		Map<String, Integer> featureCouples = new HashMap<String, Integer>();
 		
 		int begin, end;
 		int count = 0;
@@ -34,8 +31,10 @@ public class FragmentUtilTest {
 			
 			String sparqlQuery = null;
 			String features = null;
+						
+			FileWriter fw = new FileWriter("/home/hanxingwang/Data/SearchResult/ZeroResultWithFilterOrMinus");
 			
-			Integer oldCount, newCount;
+			bw = new BufferedWriter(fw);
 
 			while ((sparqlString = bufferedReader.readLine()) != null) {				
 				begin = sparqlString.indexOf('\"');
@@ -58,18 +57,10 @@ public class FragmentUtilTest {
 					
 					features = FragmentUtil.analysisFragment(query);
 
-					if(features == null || features.trim().equals(""))
-						System.err.println("nononono");
-						
-					count ++;
+					if(features.contains("F") || features.contains("M"))
+						bw.write(sparqlQuery + "\n");
 					
-					if(featureCouples.containsKey(features)) {
-						oldCount = featureCouples.get(features);
-						newCount = new Integer(oldCount + 1);
-						featureCouples.put(features, newCount);
-					} else {
-						featureCouples.put(features, new Integer(1));
-					}
+					count ++;
 					
 					if(count % 10000 == 0)
 						System.out.println("We have " + count + " sparql queries");
@@ -82,13 +73,16 @@ public class FragmentUtilTest {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			try {
+				bw.flush();
+				bw.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		System.out.println(count);
-		
-		Set<String> featuresCoupleSet = featureCouples.keySet();
-		for(String feature : featuresCoupleSet) {
-			System.out.println(feature + "\t" + featureCouples.get(feature));
-		}
 	}
 }
