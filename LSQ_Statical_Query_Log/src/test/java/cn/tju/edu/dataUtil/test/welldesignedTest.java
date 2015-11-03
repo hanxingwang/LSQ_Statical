@@ -17,14 +17,14 @@ public class welldesignedTest {
 	private static Storge storge = new Storge("/home/hanxingwang/Data/SesameStorage");
 	private static QueryStorge query = new QueryStorge(storge.getConnection());
 	
-//	@Test
+	@Test
 	public void a_testGetSource() {
-		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> PREFIX sp:<http://spinrdf.org/sp#> SELECT ?text WHERE {  ?id lsqv:triplePatterns ?triples. ?id sp:text ?text }";
+		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> PREFIX sp:<http://spinrdf.org/sp#> SELECT DISTINCT ?text WHERE {  ?id lsqv:triplePatterns ?triples. ?id lsqv:usesFeature ?feature . ?id sp:text ?text }";
 		
-		query.QueryToFile(queryString, "/home/hanxingwang/Data/SearchResult/QueryText");
+		query.QueryToFile(queryString, "/home/hanxingwang/Data/SearchResult/Fragment");
 	}
 	
-	@Test
+//	@Test
 	public void b_testWellDesign() {
 		String sparqlString = null;
 		String filePath = "/home/hanxingwang/Data/SearchResult/QueryText";
