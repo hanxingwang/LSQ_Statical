@@ -4,7 +4,15 @@ import java.util.ArrayList;
 
 import org.openrdf.query.algebra.Exists;
 import org.openrdf.query.algebra.If;
+import org.openrdf.query.algebra.In;
+import org.openrdf.query.algebra.IsBNode;
+import org.openrdf.query.algebra.IsLiteral;
+import org.openrdf.query.algebra.IsNumeric;
+import org.openrdf.query.algebra.IsResource;
+import org.openrdf.query.algebra.IsURI;
 import org.openrdf.query.algebra.Join;
+import org.openrdf.query.algebra.LangMatches;
+import org.openrdf.query.algebra.Regex;
 import org.openrdf.query.algebra.TupleExpr;
 import org.openrdf.query.algebra.helpers.QueryModelVisitorBase;
 
@@ -38,5 +46,46 @@ public class AndFeatureExctor extends QueryModelVisitorBase<RuntimeException> {
 			this.features.add("If");
 
 		meetNode(node);
+	}
+
+	public void meet(In node) throws RuntimeException {
+		if (!this.features.contains("In"))
+			this.features.add("In");
+
+		meetCompareSubQueryValueOperator(node);
+	}
+
+	public void meet(Regex node) throws RuntimeException {
+		if (!this.features.contains("Regex"))
+			this.features.add("Regex");
+
+		meetBinaryValueOperator(node);
+	}
+
+	public void meet(LangMatches node) throws RuntimeException {
+		if (!this.features.contains("LangMatches"))
+			this.features.add("LangMatches");
+
+		meetBinaryValueOperator(node);
+	}
+
+	public void meet(IsBNode node) throws RuntimeException {
+		meetUnaryValueOperator(node);
+	}
+
+	public void meet(IsLiteral node) throws RuntimeException {
+		meetUnaryValueOperator(node);
+	}
+
+	public void meet(IsNumeric node) throws RuntimeException {
+		meetUnaryValueOperator(node);
+	}
+
+	public void meet(IsResource node) throws RuntimeException {
+		meetUnaryValueOperator(node);
+	}
+
+	public void meet(IsURI node) throws RuntimeException {
+		meetUnaryValueOperator(node);
 	}
 }
