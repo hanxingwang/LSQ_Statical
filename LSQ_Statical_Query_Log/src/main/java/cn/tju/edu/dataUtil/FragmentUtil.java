@@ -21,6 +21,33 @@ import cn.tju.edu.util.FragmentExctor;
 public class FragmentUtil {
 	private static ArrayList<String> features = new ArrayList<String>();
 	
+	public static ArrayList<String> getFragments(Query query) throws Exception{
+		SPARQLParser parser = new SPARQLParser();
+		ParsedQuery parsedQuery = null;
+		TupleExpr tupleExpr = null;
+
+		Element element = null;
+		AndFeatureExctor andVisitor = null;
+		FragmentExctor fragmentVisitor = null;
+
+		parsedQuery = parser.parseQuery(query.toString(), null);
+		tupleExpr = parsedQuery.getTupleExpr();
+
+		features = new ArrayList<String>();
+
+		andVisitor = new AndFeatureExctor(features);
+		andVisitor.visit(tupleExpr);
+
+		element = query.getQueryPattern();
+		fragmentVisitor = new FragmentExctor(features);
+
+		if (element != null) {
+			ElementWalker.walk(element, fragmentVisitor);
+		}
+
+		return features;
+	}
+	
 	public static String analysisFragment(Query query) {
 		String fragment = "";
 		
@@ -65,7 +92,7 @@ public class FragmentUtil {
 				fragment += "M";
 			
 			if(features.contains("SubQuery")) 
-				fragment += "S";			
+				fragment += "S";
 			
 			if(fragment.trim().equals("")) {
 				while(tupleExpr instanceof UnaryTupleOperator) {
@@ -79,7 +106,7 @@ public class FragmentUtil {
 				}
 				
 				if(tupleExpr instanceof StatementPattern || tupleExpr instanceof ArbitraryLengthPath)
-					fragment += "I";
+					fragment += "T";
 			}
 		} catch (MalformedQueryException e) {
 			// TODO Auto-generated catch block

@@ -19,7 +19,7 @@ public class FragmentUtilTest {
 	@Test
 	public void a_testFragment() {
 		String sparqlString = null;
-		String filePath = "/home/hanxingwang/Data/SearchResult/Fragment";
+		String filePath = "/home/hanxingwang/Data/SearchResult/ZeroResultWithFilterOrMinus";
 		// String filePath = "/home/hanxingwang/Data/SearchResult/NotUnionFree";
 		FileReader fileReader = null;
 		BufferedReader bufferedReader = null;
@@ -38,10 +38,10 @@ public class FragmentUtilTest {
 			Integer oldCount, newCount;
 
 			while ((sparqlString = bufferedReader.readLine()) != null) {				
-				begin = sparqlString.indexOf('\"');
-				// begin = -1;
-				end = sparqlString.lastIndexOf('\"');
-				// end = sparqlString.length();
+//				begin = sparqlString.indexOf('\"');
+				 begin = -1;
+//				end = sparqlString.lastIndexOf('\"');
+				 end = sparqlString.length();
 				if (begin < end) {
 					sparqlQuery = sparqlString.substring(begin + 1, end);
 					
@@ -57,6 +57,12 @@ public class FragmentUtilTest {
 					query.getGraphURIs().clear();
 					
 					features = FragmentUtil.analysisFragment(query);
+					
+					if(query.hasGroupBy())
+						features += "G";
+					
+					if(query.hasValues())
+						features += "V";
 
 					if(features == null || features.trim().equals(""))
 						System.err.println("nononono");

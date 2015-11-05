@@ -56,8 +56,14 @@ public class SatisfiabilityTest {
 					query.getGraphURIs().clear();
 					
 					features = FragmentUtil.analysisFragment(query);
+					
+					if(query.hasGroupBy())
+						features += "G";
+					
+					if(query.hasValues())
+						features += "V";
 
-					if(features.contains("F") || features.contains("M"))
+					if(features.contains("F") || features.contains("M") || features.contains("G") || features.contains("V"))
 						bw.write(sparqlQuery + "\n");
 					
 					count ++;

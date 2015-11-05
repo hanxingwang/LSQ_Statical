@@ -3,8 +3,10 @@ package cn.tju.edu.util;
 import java.util.ArrayList;
 
 import com.hp.hpl.jena.sparql.syntax.Element;
+import com.hp.hpl.jena.sparql.syntax.ElementBind;
 import com.hp.hpl.jena.sparql.syntax.ElementFilter;
 import com.hp.hpl.jena.sparql.syntax.ElementMinus;
+import com.hp.hpl.jena.sparql.syntax.ElementNamedGraph;
 import com.hp.hpl.jena.sparql.syntax.ElementOptional;
 import com.hp.hpl.jena.sparql.syntax.ElementSubQuery;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
@@ -43,6 +45,18 @@ public class FragmentExctor  extends ElementVisitorBase
     public void visit(ElementMinus el) {
     	 if(!this.features.contains("Minus"))
       	   this.features.add("Minus");
+    }
+    
+    @Override
+    public void visit(ElementBind el) {
+    	 if(!this.features.contains("Bind"))
+      	   this.features.add("Bind");
+    }
+    
+    @Override
+    public void visit(ElementNamedGraph el) {
+    	 if(!this.features.contains("Graph"))
+      	   this.features.add("Graph");
     }
     
     @Override
