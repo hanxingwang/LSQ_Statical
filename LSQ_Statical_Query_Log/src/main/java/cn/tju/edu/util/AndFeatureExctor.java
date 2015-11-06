@@ -11,6 +11,7 @@ import org.openrdf.query.algebra.IsNumeric;
 import org.openrdf.query.algebra.IsResource;
 import org.openrdf.query.algebra.IsURI;
 import org.openrdf.query.algebra.Join;
+import org.openrdf.query.algebra.Lang;
 import org.openrdf.query.algebra.LangMatches;
 import org.openrdf.query.algebra.Regex;
 import org.openrdf.query.algebra.TupleExpr;
@@ -61,6 +62,13 @@ public class AndFeatureExctor extends QueryModelVisitorBase<RuntimeException> {
 
 		meetBinaryValueOperator(node);
 	}
+	
+	public void meet(Lang node) throws RuntimeException {
+		if (!this.features.contains("Lang"))
+			this.features.add("Lang");
+		
+		meetUnaryValueOperator(node);
+	}
 
 	public void meet(LangMatches node) throws RuntimeException {
 		if (!this.features.contains("LangMatches"))
@@ -70,10 +78,16 @@ public class AndFeatureExctor extends QueryModelVisitorBase<RuntimeException> {
 	}
 
 	public void meet(IsBNode node) throws RuntimeException {
+		if (!this.features.contains("IsBNode"))
+			this.features.add("IsBNode");
+		
 		meetUnaryValueOperator(node);
 	}
 
 	public void meet(IsLiteral node) throws RuntimeException {
+		if (!this.features.contains("IsLiteral"))
+			this.features.add("IsLiteral");
+		
 		meetUnaryValueOperator(node);
 	}
 
@@ -86,6 +100,9 @@ public class AndFeatureExctor extends QueryModelVisitorBase<RuntimeException> {
 	}
 
 	public void meet(IsURI node) throws RuntimeException {
+		if(!features.contains("IsURI"))
+			this.features.add("IsURI");
+		
 		meetUnaryValueOperator(node);
 	}
 }

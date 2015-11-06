@@ -12,6 +12,7 @@ public class WelldesignedUtil {
 	private static int totalCount = 0;
 	private static int wellCount = 0;
 	private static int notWellCount = 0;
+	private static int notSafeCount = 0;
 
 	private static int canNotChangeToUnionFreeCount = 0;
 
@@ -28,15 +29,18 @@ public class WelldesignedUtil {
 
 		BufferedWriter wellDesignedBufferedWriter = null;
 		BufferedWriter unWellDesignedBufferedWriter = null;
+		BufferedWriter notSafeBufferedWriter = null;
 
 		try {
 			FileWriter wellDesignedFileWriter = new FileWriter("/home/hanxingwang/Data/SearchResult/WellDesigned",
 					true);
 			FileWriter unWellDesignedfileWriter = new FileWriter("/home/hanxingwang/Data/SearchResult/UnWellDesigned",
 					true);
+			FileWriter notSafeFileWriter = new FileWriter("/home/hanxingwang/Data/SearchResult/NotSafe", true);
 
 			wellDesignedBufferedWriter = new BufferedWriter(wellDesignedFileWriter);
 			unWellDesignedBufferedWriter = new BufferedWriter(unWellDesignedfileWriter);
+			notSafeBufferedWriter = new BufferedWriter(notSafeFileWriter);
 
 			if (whereClauseBegin == -1) {
 				if (!isSubQuery) {
@@ -60,9 +64,9 @@ public class WelldesignedUtil {
 			upperString = whereClause.toUpperCase();
 			
 			if (!isSafe(whereClause)) {
-				unWellDesignedBufferedWriter.write(queryString + "\n");
-				notWellCount++;
-				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount);
+				notSafeBufferedWriter.write(queryString + "\n");
+				notSafeCount ++;
+				System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount + " notsafe:" + notSafeCount);
 
 				return false;
 			}
@@ -77,7 +81,7 @@ public class WelldesignedUtil {
 					if (!isSubQuery) {
 						wellDesignedBufferedWriter.write(queryString + "\n");
 						wellCount++;
-						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount + " notsafe:" + notSafeCount);
 					}
 
 					return true;
@@ -85,7 +89,7 @@ public class WelldesignedUtil {
 					if (!isSubQuery) {
 						unWellDesignedBufferedWriter.write(queryString + "\n");
 						notWellCount++;
-						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount + " notsafe:" + notSafeCount);
 					}
 
 					return false;
@@ -100,7 +104,7 @@ public class WelldesignedUtil {
 					if (!isSubQuery) {
 						wellDesignedBufferedWriter.write(queryString + "\n");
 						wellCount++;
-						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount);
+						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount + " notsafe:" + notSafeCount);
 					}
 
 					return true;
@@ -108,7 +112,7 @@ public class WelldesignedUtil {
 					if (!isSubQuery) {
 						unWellDesignedBufferedWriter.write(queryString + "\n");
 						notWellCount++;
-						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+						System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount + " notsafe:" + notSafeCount);
 					}
 
 					return false;
@@ -120,7 +124,7 @@ public class WelldesignedUtil {
 				if (!isSubQuery) {
 					wellDesignedBufferedWriter.write(queryString + "\n");
 					wellCount++;
-					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount + " notsafe:" + notSafeCount);
 				}
 
 				return true;
@@ -128,7 +132,7 @@ public class WelldesignedUtil {
 				if (!isSubQuery) {
 					unWellDesignedBufferedWriter.write(queryString + "\n");
 					notWellCount++;
-					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:"	+ notWellCount);
+					System.out.println("total: " + totalCount + " wellcount:" + wellCount + " notwellcout:" + notWellCount + " notsafe:" + notSafeCount);
 				}
 
 				return false;
@@ -139,9 +143,11 @@ public class WelldesignedUtil {
 			try {
 				wellDesignedBufferedWriter.flush();
 				unWellDesignedBufferedWriter.flush();
+				notSafeBufferedWriter.flush();
 
 				wellDesignedBufferedWriter.close();
 				unWellDesignedBufferedWriter.close();
+				notSafeBufferedWriter.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

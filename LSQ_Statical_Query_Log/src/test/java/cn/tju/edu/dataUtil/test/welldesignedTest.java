@@ -1,12 +1,12 @@
 package cn.tju.edu.dataUtil.test;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.junit.Test;
 
@@ -34,9 +34,14 @@ public class welldesignedTest {
 		String sparqlString = null;
 		String filePath = "/home/hanxingwang/Data/SearchResult/QueryText";
 		String sparql1_1Path = "/home/hanxingwang/Data/SearchResult/Sparql1_1";
+		String sparql1_0Path = "/home/hanxingwang/Data/SearchResult/SparqlFilterSpecial";
 //		String filePath = "/home/hanxingwang/Data/SearchResult/NotUnionFree";
 		FileReader fileReader = null;
+		FileWriter fileWriter1 = null;
+		FileWriter fileWriter2 = null;
 		BufferedReader bufferedReader = null;
+		BufferedWriter sparql1_1Writer = null;
+		BufferedWriter sparql1_0Writer = null;
 		
 		int sparql1_1Count = 0;
 		int sparql1_0Count = 0;
@@ -44,6 +49,13 @@ public class welldesignedTest {
 		try {
 			fileReader = new FileReader(filePath);
 			bufferedReader = new BufferedReader(fileReader);
+			
+			fileWriter1 = new FileWriter(sparql1_1Path);
+			sparql1_1Writer = new BufferedWriter(fileWriter1);
+			
+			fileWriter2 = new FileWriter(sparql1_0Path);
+			sparql1_0Writer = new BufferedWriter(fileWriter2);
+			
 			String sparqlQuery = null;
 			
 			Query query = null;
@@ -66,11 +78,17 @@ public class welldesignedTest {
 					if(sparqlQuery.contains("NOT EXISTS"))
 						System.err.println();
 					try {
-						if(!isSparql1_1(query)) {
-							sparql1_0Count ++;
-							WelldesignedUtil.isWelldesign(sparqlQuery, false);
+						if(!isSparql1_1(query)) {							
+							if(!isSparql1_0FilterSpecial(query)) {
+								sparql1_0Count ++;
+								WelldesignedUtil.isWelldesign(sparqlQuery, false);
+							} else {
+								sparql1_0Writer.write(sparqlQuery + "\n");
+							}							
 						} else {
 							sparql1_1Count ++;
+							
+							sparql1_1Writer.write(sparqlQuery + "\n");
 						}
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
@@ -84,6 +102,16 @@ public class welldesignedTest {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			try {
+				sparql1_1Writer.flush();
+				sparql1_1Writer.close();
+				sparql1_0Writer.flush();
+				sparql1_0Writer.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		System.out.println("Sparql 1.0 is " + sparql1_0Count + " .");
@@ -105,6 +133,16 @@ public class welldesignedTest {
 		if (features.contains("Minus") || features.contains("Bind") || features.contains("Graph")
 				|| features.contains("Exists") || features.contains("In") || features.contains("SubQuery")
 				|| features.contains("If"))
+			return true;
+
+		return false;
+	}
+	
+	private boolean isSparql1_0FilterSpecial(Query query) throws Exception {		
+		ArrayList<String> features = FragmentUtil.getFragments(query);
+
+		if (features.contains("Regex") || features.contains("LangMatches") || features.contains("IsURI")
+				|| features.contains("IsLiteral") || features.contains("IsBNode") || features.contains("Lang"))
 			return true;
 
 		return false;
