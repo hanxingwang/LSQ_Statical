@@ -15,33 +15,45 @@ import com.hp.hpl.jena.query.QueryFactory;
 
 import cn.tju.edu.Query.QueryStorge;
 import cn.tju.edu.dataUtil.FragmentUtil;
-import cn.tju.edu.dataUtil.WelldesignedUtil;
 import cn.tju.edu.dataprocess.Storge;
 
-public class welldesignedTest {
+public class FilterTest {
 	private static Storge storge = new Storge("/home/hanxingwang/Data/SesameStorage");
 	private static QueryStorge query = new QueryStorge(storge.getConnection());
 	
 //	@Test
 	public void a_testGetSource() {
-		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> sp:<http://spinrdf.org/sp#> SELECT DISTINCT ?text WHERE {  ?id lsqv:feature ?id sp:text ?text }";
+		String queryString = "PREFIX lsqv:<http://lsq.aksw.org/vocab#> PREFIX sp:<http://spinrdf.org/sp#> SELECT DISTINCT ?text WHERE {  ?id lsqv:usesFeature lsqv:Filter . ?id sp:text ?text }";
 		
-		query.QueryToFile(queryString, "/home/hanxingwang/Data/SearchResult/OZero");
+		query.QueryToFile(queryString, "/home/hanxingwang/Data/SearchResult/Filter");
 	}
 	
 	@Test
 	public void b_testWellDesign() {
 		String sparqlString = null;
-		String filePath = "/home/hanxingwang/Data/SearchResult/RestZero";
+		String filePath = "/home/hanxingwang/Data/SearchResult/Filter";
 		String sparql1_1Path = "/home/hanxingwang/Data/SearchResult/Sparql1_1";
-		String sparql1_0Path = "/home/hanxingwang/Data/SearchResult/SparqlFilterSpecial";
+		String regex = "/home/hanxingwang/Data/SearchResult/Regex";
+		String lang = "/home/hanxingwang/Data/SearchResult/Lang";
+		String is = "/home/hanxingwang/Data/SearchResult/Is";
+		String rest = "/home/hanxingwang/Data/SearchResult/Rest";
+		String biggerOrLess = "/home/hanxingwang/Data/SearchResult/BiggerOrLess";
 //		String filePath = "/home/hanxingwang/Data/SearchResult/NotUnionFree";
 		FileReader fileReader = null;
 		FileWriter fileWriter1 = null;
 		FileWriter fileWriter2 = null;
+		FileWriter fileWriter3 = null;
+		FileWriter fileWriter4 = null;
+		FileWriter fileWriter5 = null;
+		FileWriter fileWriter6 = null;
+		
 		BufferedReader bufferedReader = null;
 		BufferedWriter sparql1_1Writer = null;
-		BufferedWriter sparql1_0Writer = null;
+		BufferedWriter regexBufferedWriter = null;
+		BufferedWriter langBufferedWriter = null;
+		BufferedWriter isBufferedWriter = null;
+		BufferedWriter restBufferedWriter = null;
+		BufferedWriter biggerOrLessBufferedWriter = null;
 		
 		int sparql1_1Count = 0;
 		int sparql1_0Count = 0;
@@ -53,18 +65,26 @@ public class welldesignedTest {
 			fileWriter1 = new FileWriter(sparql1_1Path);
 			sparql1_1Writer = new BufferedWriter(fileWriter1);
 			
-			fileWriter2 = new FileWriter(sparql1_0Path);
-			sparql1_0Writer = new BufferedWriter(fileWriter2);
+			fileWriter2 = new FileWriter(regex);
+			regexBufferedWriter = new BufferedWriter(fileWriter2);
+			fileWriter3 = new FileWriter(lang);
+			langBufferedWriter = new BufferedWriter(fileWriter3);
+			fileWriter4 = new FileWriter(is);
+			isBufferedWriter = new BufferedWriter(fileWriter4);
+			fileWriter5 = new FileWriter(rest);
+			restBufferedWriter = new BufferedWriter(fileWriter5);
+			fileWriter6 = new FileWriter(biggerOrLess);
+			biggerOrLessBufferedWriter = new BufferedWriter(fileWriter6);
 			
 			String sparqlQuery = null;
 			
 			Query query = null;
 			
 			while ((sparqlString = bufferedReader.readLine()) != null) {
-//				begin = sparqlString.indexOf('\"');
-				begin = -1;
-//				end = sparqlString.lastIndexOf('\"');
-				end = sparqlString.length();
+				begin = sparqlString.indexOf('\"');
+//				begin = -1;
+				end = sparqlString.lastIndexOf('\"');
+//				end = sparqlString.length();
 				if(begin < end) {
 					sparqlQuery = sparqlString.substring(begin+1, end);
 					
@@ -75,15 +95,23 @@ public class welldesignedTest {
 						continue;
 					}
 					
-					if(sparqlQuery.contains("NOT EXISTS"))
-						System.err.println();
 					try {
 						if(!isSparql1_1(query)) {							
-							if(!isSparql1_0FilterSpecial(query)) {								
-								WelldesignedUtil.isWelldesign(sparqlQuery, false);
+							if(!isRegex(query)) {
+								if(!isLangMatches(query)) {
+									if(!isIs(query)) {
+										if(!biggerOrLess(query))
+											restBufferedWriter.write(sparqlQuery + "\n");
+										else
+											biggerOrLessBufferedWriter.write(sparqlQuery + "\n");
+									} else {
+										isBufferedWriter.write(sparqlQuery + "\n");
+									}
+								} else {
+									langBufferedWriter.write(sparqlQuery + "\n");
+								}
 							} else {
-								sparql1_0Count ++;
-								sparql1_0Writer.write(sparqlQuery + "\n");
+								regexBufferedWriter.write(sparqlQuery + "\n");
 							}							
 						} else {
 							sparql1_1Count ++;
@@ -106,8 +134,8 @@ public class welldesignedTest {
 			try {
 				sparql1_1Writer.flush();
 				sparql1_1Writer.close();
-				sparql1_0Writer.flush();
-				sparql1_0Writer.close();
+				regexBufferedWriter.flush();
+				regexBufferedWriter.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -138,15 +166,39 @@ public class welldesignedTest {
 		return false;
 	}
 	
-	private boolean isSparql1_0FilterSpecial(Query query) throws Exception {		
+	private boolean isRegex(Query query) throws Exception {		
 		ArrayList<String> features = FragmentUtil.getFragments(query);
 
-		if (features.contains("Regex") || features.contains("Lang") || features.contains("LangMatches")
-				|| features.contains("Str") || features.contains("Datatype") || features.contains("IsURI")
-				|| features.contains("IsLiteral") || features.contains("IsBNode") || features.contains("BiggerOrLess"))
+		if (features.contains("Regex"))
 			return true;
 
 		return false;
 	}
+	
+	private boolean isLangMatches(Query query) throws Exception {		
+		ArrayList<String> features = FragmentUtil.getFragments(query);
 
+		if (features.contains("Lang") || features.contains("LangMatches") || features.contains("Str") || features.contains("Datatype"))
+			return true;
+
+		return false;
+	}
+	
+	private boolean isIs(Query query) throws Exception {
+		ArrayList<String> features = FragmentUtil.getFragments(query);
+		
+		if(features.contains("IsURI")|| features.contains("IsLiteral") || features.contains("IsBNode"))
+			return true;
+		
+		return false;
+	}
+	
+	private boolean biggerOrLess(Query query) throws Exception {
+		ArrayList<String> features = FragmentUtil.getFragments(query);
+		
+		if(features.contains("BiggerOrLess"))
+			return true;
+		
+		return false;
+	}
 }

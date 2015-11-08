@@ -1,8 +1,10 @@
 package cn.tju.edu.dataUtil.test;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,10 +21,14 @@ public class FragmentUtilTest {
 	@Test
 	public void a_testFragment() {
 		String sparqlString = null;
-		String filePath = "/home/hanxingwang/Data/SearchResult/ZeroResultWithFilterOrMinus";
+		String filePath = "/home/hanxingwang/Data/SearchResult/RestZero";
+		String filePath2 = "/home/hanxingwang/Data/SearchResult/OZero";
 		// String filePath = "/home/hanxingwang/Data/SearchResult/NotUnionFree";
 		FileReader fileReader = null;
 		BufferedReader bufferedReader = null;
+		
+		FileWriter fileWriter = null;
+		BufferedWriter bufferedWriter = null;
 		
 		Map<String, Integer> featureCouples = new HashMap<String, Integer>();
 		
@@ -31,6 +37,9 @@ public class FragmentUtilTest {
 		try {
 			fileReader = new FileReader(filePath);
 			bufferedReader = new BufferedReader(fileReader);
+			
+			fileWriter = new FileWriter(filePath2);
+			bufferedWriter = new BufferedWriter(fileWriter);
 			
 			String sparqlQuery = null;
 			String features = null;
@@ -69,6 +78,10 @@ public class FragmentUtilTest {
 						
 					count ++;
 					
+					if(features.contains("O")) {
+						bufferedWriter.write(sparqlString + "\n");
+					}
+					
 					if(featureCouples.containsKey(features)) {
 						oldCount = featureCouples.get(features);
 						newCount = new Integer(oldCount + 1);
@@ -88,6 +101,15 @@ public class FragmentUtilTest {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			try {
+				bufferedWriter.flush();
+				bufferedWriter.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
 		
 		System.out.println(count);
